@@ -21,6 +21,8 @@ export interface HoveredDot {
   month: string;
   demographic: string;
   layer: import("@/lib/types").MigrationLayer;
+  visaClass?: string;
+  visaClassLabel?: string;
 }
 
 interface Props {
@@ -137,7 +139,7 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
       const count = Math.max(1, Math.round(record.count / 300));
       const style = DOT_STYLES[record.layer];
       const isBorder = record.layer.startsWith("border-");
-      const isLegal = record.layer.startsWith("legal-") || record.layer === "refugee" || record.layer === "asylum";
+      const isLegal = record.layer.startsWith("legal-") || record.layer === "temp-worker" || record.layer === "refugee" || record.layer === "asylum";
       const isOverstay = record.layer === "overstay";
       const isUncounted = record.layer === "uncounted";
 
@@ -181,6 +183,8 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
           nationalityName: record.nationalityName,
           region: record.region, sector: record.sector,
           demographic: record.demographic,
+          visaClass: record.visaClass,
+          visaClassLabel: record.visaClassLabel,
           entryType: isBorder ? "southern-border" : isOverstay ? "airport" : isLegal ? "airport" : "unknown",
           phase: record.layer === "uncounted" ? "settled" : "incoming",
           hasArrest: false, arrestX: 0, arrestY: 0,
@@ -211,47 +215,99 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
       (p) => p.layer !== "border-turnedaway" || now - p.spawnTime < 1200
     );
     if (particlesRef.current.length > MAX_PARTICLES) {
-      particlesRef.current = particlesRef.current.slice(-MAX_PARTICLES);
+      const byLayer = new Map<string, Particle[]>();
+      for (const p of particlesRef.current) {
+        let arr = byLayer.get(p.layer);
+        if (!arr) { arr = []; byLayer.set(p.layer, arr); }
+        arr.push(p);
+      }
+      const excess = particlesRef.current.length - MAX_PARTICLES;
+      let removed = 0;
+      const totalParticles = particlesRef.current.length;
+      const keep = new Set<Particle>();
+      for (const [, layerParticles] of byLayer) {
+        const layerShare = layerParticles.length / totalParticles;
+        const layerTrim = Math.floor(excess * layerShare);
+        for (let i = layerTrim; i < layerParticles.length; i++) {
+          keep.add(layerParticles[i]);
+        }
+        removed += layerTrim;
+      }
+      particlesRef.current = particlesRef.current.filter((p) => keep.has(p));
     }
+    settledDirtyRef.current = true;
     prevMonthRef.current = currentMonth;
   }, [currentMonth, spawnParticles]);
 
-  // Animation loop
+  const settledCanvasRef = useRef<HTMLCanvasElement>(null);
+  const settledDirtyRef = useRef(true);
+  const fadeFramesRef = useRef(0);
+  const prevPresetRef = useRef(activePreset);
+
+  if (prevPresetRef.current !== activePreset) {
+    prevPresetRef.current = activePreset;
+    settledDirtyRef.current = true;
+    fadeFramesRef.current = 20;
+  }
+
+  // Animation loop — two canvases: settled (static) + active (per-frame)
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const activeCanvas = canvasRef.current;
+    const sCanvas = settledCanvasRef.current;
+    if (!activeCanvas || !sCanvas) return;
+    const actx = activeCanvas.getContext("2d");
+    const sctx = sCanvas.getContext("2d");
+    if (!actx || !sctx) return;
     const dpr = window.devicePixelRatio || 1;
 
-    canvas.width = width * dpr; canvas.height = height * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    activeCanvas.width = width * dpr; activeCanvas.height = height * dpr;
+    sCanvas.width = width * dpr; sCanvas.height = height * dpr;
+    actx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    settledDirtyRef.current = true;
 
     let animId: number;
     const batchMap = new Map<string, { x: number; y: number }[]>();
 
+    const flushBatch = (ctx: CanvasRenderingContext2D) => {
+      for (const [key, dots] of batchMap) {
+        const [color, alphaStr, radiusStr] = key.split("|");
+        ctx.fillStyle = color;
+        ctx.globalAlpha = parseFloat(alphaStr);
+        const radius = parseFloat(radiusStr);
+        ctx.beginPath();
+        for (const { x, y } of dots) {
+          ctx.moveTo(x + radius, y);
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const addBatch = (fill: string, alpha: number, x: number, y: number, radius: number) => {
+      const qa = ((alpha * 20 + 0.5) | 0) / 20;
+      const key = `${fill}|${qa}|${radius}`;
+      let arr = batchMap.get(key);
+      if (!arr) { arr = []; batchMap.set(key, arr); }
+      arr.push({ x, y });
+    };
+
     const animate = () => {
       const now = performance.now();
-
-      ctx.clearRect(0, 0, width, height);
-
-      batchMap.clear();
       const particles = particlesRef.current;
       const activeLayersNow = activeLayersRef.current;
-
-      const addBatch = (fill: string, alpha: number, x: number, y: number, radius: number) => {
-        const key = `${fill}|${alpha.toFixed(2)}|${radius}`;
-        let arr = batchMap.get(key);
-        if (!arr) { arr = []; batchMap.set(key, arr); }
-        arr.push({ x, y });
-      };
-
       const currentPreset = presetRef.current;
       const isFiltered = currentPreset !== "all";
       const isArrests = currentPreset === "arrests";
-      const ringBatch: { x: number; y: number; color: string }[] = [];
+      let newSettled = false;
+
+      // Active canvas: incoming + fading turnedaway
+      actx.clearRect(0, 0, width, height);
+      batchMap.clear();
 
       for (const p of particles) {
+        if (p.phase !== "incoming" && p.layer !== "border-turnedaway") continue;
         const style = DOT_STYLES[p.layer];
         const isActive = activeLayersNow.has(p.layer);
 
@@ -265,26 +321,49 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
           continue;
         }
 
-        if (p.phase === "incoming") {
-          const dx = p.targetX - p.x;
-          const dy = p.targetY - p.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 1.5) {
-            p.x = p.targetX; p.y = p.targetY;
-            p.settled = true; p.phase = "settled";
-            p.opacity = isActive ? style.opacity : 0.06;
-          } else {
-            const speed = Math.min(0.12, 8 / dist);
-            p.x += dx * speed; p.y += dy * speed;
-            p.opacity = Math.min(isActive ? style.opacity : 0.06, p.opacity + 0.06);
-          }
-          addBatch(style.fill, p.opacity, p.x, p.y, p.settled ? style.radius : style.radius + 0.7);
-          continue;
+        const dx = p.targetX - p.x;
+        const dy = p.targetY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 1.5) {
+          p.x = p.targetX; p.y = p.targetY;
+          p.settled = true; p.phase = "settled";
+          p.opacity = isActive ? style.opacity : 0.06;
+          newSettled = true;
+        } else {
+          const speed = Math.min(0.12, 8 / dist);
+          p.x += dx * speed; p.y += dy * speed;
+          p.opacity = Math.min(isActive ? style.opacity : 0.06, p.opacity + 0.06);
         }
+        addBatch(style.fill, p.opacity, p.x, p.y, p.settled ? style.radius : style.radius + 0.7);
+      }
+      flushBatch(actx);
 
-        if (p.phase === "settled" || p.phase === "faded") {
+      // Settled canvas: only redraw when dirty
+      if (newSettled) {
+        settledDirtyRef.current = true;
+        if (fadeFramesRef.current <= 0) fadeFramesRef.current = 1;
+      }
+
+      const needsSettledRedraw = settledDirtyRef.current || fadeFramesRef.current > 0;
+
+      if (needsSettledRedraw) {
+        sctx.clearRect(0, 0, width, height);
+        batchMap.clear();
+        const ringBatch: { x: number; y: number; color: string }[] = [];
+        let allConverged = true;
+
+        for (const p of particles) {
+          if (p.phase !== "settled" && p.phase !== "faded") continue;
+          const style = DOT_STYLES[p.layer];
+          const isActive = activeLayersNow.has(p.layer);
           const targetOpacity = isActive ? style.opacity : (isFiltered ? 0.06 : style.opacity);
-          p.opacity += (targetOpacity - p.opacity) * 0.08;
+
+          if (fadeFramesRef.current > 0) {
+            p.opacity += (targetOpacity - p.opacity) * 0.15;
+          } else {
+            p.opacity = targetOpacity;
+          }
+          if (Math.abs(p.opacity - targetOpacity) > 0.01) allConverged = false;
           if (p.opacity < 0.02) continue;
 
           const r = isActive && isArrests ? style.radius + 1 : style.radius;
@@ -293,43 +372,25 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
           if (isActive && isArrests) {
             ringBatch.push({ x: p.x, y: p.y, color: style.fill });
           }
-          continue;
+        }
+        flushBatch(sctx);
+
+        if (ringBatch.length > 0) {
+          sctx.lineWidth = 1;
+          sctx.globalAlpha = 0.5;
+          for (const { x, y, color } of ringBatch) {
+            sctx.beginPath();
+            sctx.arc(x, y, 5, 0, Math.PI * 2);
+            sctx.strokeStyle = color;
+            sctx.stroke();
+          }
+          sctx.globalAlpha = 1;
         }
 
-        if (p.layer === "uncounted") {
-          const targetOpacity = isActive ? style.opacity : 0.04;
-          p.opacity += (targetOpacity - p.opacity) * 0.05;
-          if (p.opacity < 0.02) continue;
-          addBatch(style.fill, p.opacity, p.x, p.y, style.radius);
-          continue;
-        }
+        if (fadeFramesRef.current > 0) fadeFramesRef.current--;
+        if (allConverged && fadeFramesRef.current <= 0) settledDirtyRef.current = false;
       }
 
-      for (const [key, dots] of batchMap) {
-        const [color, alphaStr, radiusStr] = key.split("|");
-        ctx.fillStyle = color;
-        ctx.globalAlpha = parseFloat(alphaStr);
-        const radius = parseFloat(radiusStr);
-        ctx.beginPath();
-        for (const { x, y } of dots) {
-          ctx.moveTo(x + radius, y);
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-        }
-        ctx.fill();
-      }
-
-      if (ringBatch.length > 0) {
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = 0.5;
-        for (const { x, y, color } of ringBatch) {
-          ctx.beginPath();
-          ctx.arc(x, y, 5, 0, Math.PI * 2);
-          ctx.strokeStyle = color;
-          ctx.stroke();
-        }
-      }
-
-      ctx.globalAlpha = 1;
       animId = requestAnimationFrame(animate);
     };
     animId = requestAnimationFrame(animate);
@@ -369,6 +430,8 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
         region: closest.region, sector: closest.sector,
         month: closest.birthMonth, demographic: closest.demographic,
         layer: closest.layer,
+        visaClass: closest.visaClass,
+        visaClassLabel: closest.visaClassLabel,
       });
     } else {
       onHover(null);
@@ -387,6 +450,8 @@ export default function USMap({ data, currentMonth, width, height, activePreset,
             fill="var(--color-map-neutral)" stroke="var(--color-map-stroke)" strokeWidth={0.5} />
         ))}
       </svg>
+      <canvas ref={settledCanvasRef} className="absolute inset-0 pointer-events-none"
+        style={{ width, height }} aria-hidden="true" />
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none"
         style={{ width, height }} aria-hidden="true" />
     </div>

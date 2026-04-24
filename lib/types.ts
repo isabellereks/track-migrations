@@ -4,6 +4,7 @@ export type MigrationLayer =
   | "legal-employment"
   | "legal-family"
   | "legal-diversity"
+  | "temp-worker"
   | "refugee"
   | "asylum"
   | "border-entered"
@@ -16,12 +17,12 @@ export type FilterPreset = "all" | "legal" | "border" | "overstays" | "uncounted
 
 export const FILTER_LAYERS: Record<FilterPreset, MigrationLayer[]> = {
   all: [
-    "legal-employment", "legal-family", "legal-diversity",
+    "legal-employment", "legal-family", "legal-diversity", "temp-worker",
     "refugee", "asylum",
     "border-entered", "border-inadmissible", "border-turnedaway",
     "overstay", "uncounted",
   ],
-  legal: ["legal-employment", "legal-family", "legal-diversity", "refugee", "asylum"],
+  legal: ["legal-employment", "legal-family", "legal-diversity", "temp-worker", "refugee", "asylum"],
   border: ["border-entered", "border-inadmissible", "border-turnedaway"],
   overstays: ["overstay"],
   uncounted: ["uncounted"],
@@ -32,6 +33,7 @@ export const LAYER_LABEL: Record<MigrationLayer, string> = {
   "legal-employment": "Employment-based",
   "legal-family": "Family-sponsored",
   "legal-diversity": "Diversity visa",
+  "temp-worker": "Temporary worker",
   refugee: "Refugee",
   asylum: "Asylum",
   "border-entered": "Border (entered)",
@@ -54,6 +56,7 @@ export const DOT_STYLES: Record<MigrationLayer, DotStyle> = {
   "legal-employment":    { fill: "#7090C8", radius: 2.5, opacity: 0.8 },
   "legal-family":        { fill: "#D9A766", radius: 2.5, opacity: 0.8 },
   "legal-diversity":     { fill: "#7EBC8E", radius: 2.5, opacity: 0.8 },
+  "temp-worker":         { fill: "#5B7FB5", radius: 2.5, opacity: 0.75 },
   refugee:               { fill: "#AF52DE", radius: 2.5, opacity: 0.8 },
   asylum:                { fill: "#D98080", radius: 2.5, opacity: 0.8 },
   "border-entered":      { fill: "#C8534A", radius: 2.5, opacity: 0.8 },
@@ -87,6 +90,8 @@ export interface Particle {
   sector: string;
   demographic: string;
   entryType: string;
+  visaClass?: string;
+  visaClassLabel?: string;
 
   phase: ParticlePhase;
   hasArrest: boolean;
@@ -115,7 +120,44 @@ export interface EncounterRecord {
   demographic: "single-adult" | "family-unit" | "unaccompanied-child";
   count: number;
   layer: MigrationLayer;
+  visaClass?: string;
+  visaClassLabel?: string;
 }
+
+export const VISA_CLASS_LABELS: Record<string, string> = {
+  "H1B":  "Specialty worker",
+  "H2A":  "Agricultural worker",
+  "H2B":  "Seasonal non-ag worker",
+  "L1":   "Company transferee",
+  "O1":   "Extraordinary ability",
+  "TN":   "USMCA professional",
+  "E1":   "Treaty trader",
+  "E2":   "Treaty investor",
+  "E3":   "Australian specialty",
+  "H3":   "Trainee",
+  "P1":   "Athlete / entertainer",
+  "R1":   "Religious worker",
+  "J1":   "Exchange visitor",
+  "EB-1": "Priority worker",
+  "EB-2": "Advanced degree",
+  "EB-3": "Skilled / professional",
+  "EB-4": "Special immigrant",
+  "EB-5": "Investor",
+  "F1":   "Unmarried adult children of citizens",
+  "F2A":  "Spouses/children of LPRs",
+  "F2B":  "Unmarried adult children of LPRs",
+  "F3":   "Married children of citizens",
+  "F4":   "Siblings of citizens",
+  "IR":   "Immediate relative",
+  "DV":   "Diversity visa",
+  "T8-APP":  "Apprehension",
+  "T8-INAD": "Inadmissible",
+  "T42":     "Title 42 expulsion",
+  "CBPONE":  "CBP One appointment",
+  "REF":     "Refugee",
+  "ASY":     "Asylee",
+  "OS":      "Visa overstay",
+};
 
 export interface MonthlyTotal {
   month: string;

@@ -11,6 +11,7 @@ import {
   getSampleData,
   getMonths,
   topNationalities,
+  topVisaClasses,
   totalUpToMonth,
 } from "@/lib/sample-data";
 import { FILTER_LAYERS } from "@/lib/types";
@@ -61,6 +62,10 @@ export default function DataMap({ revealProgress }: Props) {
   );
   const topCountries = useMemo(
     () => topNationalities(filteredData, currentMonth, 5),
+    [filteredData, currentMonth]
+  );
+  const topVisas = useMemo(
+    () => topVisaClasses(filteredData, currentMonth, 5),
     [filteredData, currentMonth]
   );
 
@@ -158,6 +163,7 @@ export default function DataMap({ revealProgress }: Props) {
           currentMonth={currentMonth}
           totalEncounters={total}
           topCountries={topCountries}
+          topVisas={topVisas}
         />
       </div>
 
@@ -173,6 +179,8 @@ export default function DataMap({ revealProgress }: Props) {
           demographic={hoveredDot.demographic}
           encounterType={hoveredDot.layer}
           visible={true}
+          visaClass={hoveredDot.visaClass}
+          visaClassLabel={hoveredDot.visaClassLabel}
         />
       )}
 

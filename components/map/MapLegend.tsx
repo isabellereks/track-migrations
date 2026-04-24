@@ -9,7 +9,7 @@ interface Props {
 }
 
 const GROUPED: Record<string, { label: string; layers: MigrationLayer[] }> = {
-  legal: { label: "Legal", layers: ["legal-employment", "legal-family", "legal-diversity", "refugee", "asylum"] },
+  legal: { label: "Legal", layers: ["legal-employment", "legal-family", "legal-diversity", "temp-worker", "refugee", "asylum"] },
   border: { label: "Border", layers: ["border-entered", "border-inadmissible", "border-turnedaway"] },
   overstay: { label: "Overstay", layers: ["overstay"] },
   uncounted: { label: "Uncounted", layers: ["uncounted"] },

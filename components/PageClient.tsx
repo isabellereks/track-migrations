@@ -26,6 +26,12 @@ const WhatTheyBuilt = dynamic(
 const ByTheNumbers = dynamic(
   () => import("@/components/sections/ByTheNumbers")
 );
+const HistoricalContext = dynamic(
+  () => import("@/components/sections/HistoricalContext")
+);
+const AboutData = dynamic(
+  () => import("@/components/sections/AboutData")
+);
 
 export default function PageClient() {
   const progress = useScrollProgress();
@@ -42,6 +48,8 @@ export default function PageClient() {
       <WhatHappenedNext />
       <WhatTheyBuilt />
       <ByTheNumbers />
+      <HistoricalContext />
+      <AboutData />
 
       <footer className="relative z-10 bg-white border-t border-black/[.06]">
         <div className="max-w-5xl mx-auto px-8 py-10 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">

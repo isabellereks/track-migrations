@@ -30,167 +30,213 @@ export default function WhatTheyBuilt() {
         <h2 className="text-3xl md:text-4xl font-semibold text-ink tracking-tight leading-[1.1] mb-4">
           What they built
         </h2>
-        <p className="text-sm text-muted leading-relaxed max-w-2xl mb-10">
+        <p className="text-sm text-muted leading-relaxed max-w-2xl mb-14">
           The same population measured by enforcement statistics also sustains
-          industries, pays taxes, and generates economic output. These are
-          the numbers on the other side of the ledger.
+          industries, pays taxes, and generates economic output. An estimated
+          8.3 million undocumented workers live in the US, most working
+          informally on farms, construction sites, restaurant kitchens, and
+          in private homes.
         </p>
 
-        {/* Invisible workforce callout */}
+        {/* Ledger comparison — no cards, just aligned typography */}
         <FadeInOnView>
-          <div className="bg-white rounded-2xl border border-black/[.06] p-6 mb-10 max-w-2xl">
-            <p className="text-sm text-ink leading-relaxed">
-              An estimated 8.3 million undocumented workers live in the US.
-              Most work informally, paid in cash on farms, construction sites,
-              restaurant kitchens, and in private homes. Their labor is invisible
-              to the IRS but visible at the grocery store, in the price of your
-              house, and on your plate.
-            </p>
-            <p className="text-[11px] text-muted mt-3">
-              Pew Research Center, Economic Policy Institute, USDA NAWS
-            </p>
+          <div className="mb-16">
+            <div className="grid grid-cols-2 gap-x-16">
+              <div className="text-xs font-medium text-muted tracking-tight pb-4 border-b border-black/[.06]">
+                What enforcement costs
+              </div>
+              <div className="text-xs font-medium text-muted tracking-tight pb-4 border-b border-black/[.06]">
+                What immigrants contribute
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-x-16">
+              {ledger.map((row, i) => (
+                <div key={`e-${i}`} className="contents">
+                  <div className="pt-4 pb-4 border-b border-black/[.03]">
+                    <div className="text-xl font-semibold text-ink tracking-tight tabular-nums">
+                      {row.enforcement.value}
+                    </div>
+                    <div className="text-xs text-muted mt-0.5">
+                      {row.enforcement.label}
+                    </div>
+                  </div>
+                  <div className="pt-4 pb-4 border-b border-black/[.03]">
+                    <div className="text-xl font-semibold tracking-tight tabular-nums" style={{ color: ECON_HEX.taxes }}>
+                      {row.contribution.value}
+                    </div>
+                    <div className="text-xs text-muted mt-0.5">
+                      {row.contribution.label}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </FadeInOnView>
 
-        {/* Two-ledger layout */}
-        <FadeInOnView delay={60}>
-          <div className="mb-12">
-            <h3 className="text-lg font-semibold text-ink tracking-tight mb-4">
-              Two sides of the ledger
+        {/* Social Security — inline editorial, not a hero card */}
+        <FadeInOnView>
+          <div className="mb-16 max-w-2xl">
+            <div className="text-sm text-ink/80 leading-relaxed">
+              Undocumented workers paid{" "}
+              <span className="font-semibold text-ink">{formatB(national.socialSecurityPaid)}</span>{" "}
+              into Social Security in 2022. They are ineligible to collect
+              benefits. They paid{" "}
+              <span className="font-semibold text-ink">{formatB(national.medicarePaid)}</span>{" "}
+              into Medicare under the same terms. The gap between what they pay in
+              and what they can draw out subsidizes the trust fund for all other
+              beneficiaries.
+            </div>
+            <div className="text-[11px] text-muted mt-3">
+              Social Security Administration, ITEP
+            </div>
+          </div>
+        </FadeInOnView>
+
+        {/* Industry breakdown — table rows, not card grid */}
+        <FadeInOnView>
+          <div className="mb-16">
+            <h3 className="text-lg font-semibold text-ink tracking-tight mb-6">
+              Industries sustained
             </h3>
-            <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-              <div>
-                <div className="text-xs font-medium text-muted tracking-tight mb-4">
-                  Enforcement costs
-                </div>
-                <div className="space-y-4">
-                  {ledger.map((row, i) => (
-                    <div key={i}>
-                      <div className="text-lg font-semibold text-ink tracking-tight">
-                        {row.enforcement.value}
+            <div className="space-y-0">
+              {byIndustry.map((ind) => {
+                const undocPct = Math.round(ind.undocumentedShare * 100);
+                const otherImmPct = Math.round((ind.immigrantShare - ind.undocumentedShare) * 100);
+                return (
+                  <div key={ind.industry} className="py-5 border-b border-black/[.06] first:border-t">
+                    <div className="flex items-start gap-8">
+                      <div className="w-40 shrink-0">
+                        <div className="text-sm font-semibold text-ink tracking-tight">
+                          {ind.industry}
+                        </div>
+                        <div className="text-[11px] text-muted mt-0.5">
+                          {ind.estimatedWorkers} workers
+                        </div>
                       </div>
-                      <div className="text-xs text-muted mt-0.5">
-                        {row.enforcement.label}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex h-6 rounded-full overflow-hidden mb-2">
+                          <div
+                            style={{
+                              width: `${undocPct}%`,
+                              backgroundColor: ECON_HEX.jobs,
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: `${otherImmPct}%`,
+                              backgroundColor: ECON_HEX.gdp,
+                            }}
+                          />
+                          <div className="flex-1 bg-black/[.04]" />
+                        </div>
+                        <div className="text-xs text-muted leading-relaxed">
+                          {ind.detail}
+                        </div>
+                      </div>
+                      <div className="w-56 shrink-0 text-xs text-muted leading-relaxed hidden md:block">
+                        {ind.impact}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-5 mt-4">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ECON_HEX.jobs }} />
+                <span className="text-[10px] text-muted">Undocumented</span>
               </div>
-              <div>
-                <div className="text-xs font-medium text-muted tracking-tight mb-4">
-                  Immigrant contributions
-                </div>
-                <div className="space-y-4">
-                  {ledger.map((row, i) => (
-                    <div key={i}>
-                      <div className="text-lg font-semibold text-ink tracking-tight">
-                        {row.contribution.value}
-                      </div>
-                      <div className="text-xs text-muted mt-0.5">
-                        {row.contribution.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ECON_HEX.gdp }} />
+                <span className="text-[10px] text-muted">Other immigrant</span>
               </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-black/[.04]" />
+                <span className="text-[10px] text-muted">US-born</span>
+              </div>
+            </div>
+            <div className="text-[11px] text-muted mt-3">
+              Pew, EPI, NAWS, BLS, AIC, Census
             </div>
           </div>
         </FadeInOnView>
 
-        {/* Social Security paradox */}
-        <FadeInOnView delay={80}>
-          <div className="bg-white rounded-2xl border border-black/[.06] p-8 mb-12 max-w-xl">
-            <div className="text-4xl md:text-5xl font-semibold text-ink tracking-tight leading-none mb-2">
-              {formatB(national.socialSecurityPaid)}
+        {/* Tax contributions — streamlined, no card */}
+        <FadeInOnView>
+          <div className="mb-16 max-w-xl">
+            <h3 className="text-lg font-semibold text-ink tracking-tight mb-6">
+              Tax contributions
+            </h3>
+            <div className="space-y-5">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-ink font-medium">All immigrants</span>
+                  <span className="text-sm font-semibold text-ink tabular-nums">
+                    {formatB(national.totalTaxesPaid)}
+                  </span>
+                </div>
+                <div className="h-5 bg-black/[.04] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: "100%",
+                      backgroundColor: ECON_HEX.taxes,
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-ink font-medium">Undocumented households</span>
+                  <span className="text-sm font-semibold text-ink tabular-nums">
+                    {formatB(national.undocumentedTaxesPaid)}
+                  </span>
+                </div>
+                <div className="h-5 bg-black/[.04] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(national.undocumentedTaxesPaid / national.totalTaxesPaid) * 100}%`,
+                      backgroundColor: ECON_HEX.gdp,
+                    }}
+                  />
+                </div>
+                <div className="mt-3 pl-1 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted">Social Security</span>
+                    <span className="text-ink tabular-nums">{formatB(national.socialSecurityPaid)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted">Medicare</span>
+                    <span className="text-ink tabular-nums">{formatB(national.medicarePaid)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted">Federal income (ITIN)</span>
+                    <span className="text-ink tabular-nums">
+                      {formatB(national.undocumentedTaxesPaid - national.socialSecurityPaid - national.medicarePaid)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-muted mb-4">
-              paid into Social Security by undocumented workers in 2022
+            <div className="text-[11px] text-muted mt-4">
+              American Immigration Council, ITEP, SSA
             </div>
-            <div className="h-px bg-black/[.06] mb-4" />
-            <div className="text-4xl md:text-5xl font-semibold text-ink tracking-tight leading-none mb-2">
-              $0
-            </div>
-            <div className="text-sm text-muted">
-              eligible to receive
-            </div>
-            <p className="text-[11px] text-muted mt-4">
-              Social Security Administration, ITEP. Undocumented workers
-              subsidize the trust fund for all other beneficiaries.
+          </div>
+        </FadeInOnView>
+
+        {/* GDP chart — full width, no card wrapper */}
+        <FadeInOnView>
+          <div className="mb-16">
+            <h3 className="text-lg font-semibold text-ink tracking-tight mb-2">
+              GDP with and without immigrants
+            </h3>
+            <p className="text-xs text-muted leading-relaxed max-w-xl mb-6">
+              CBO baseline projection vs. Peterson Institute mass deportation
+              scenario. The gap represents {formatB(gdpGap * 1_000_000_000_000)} in lost
+              output by {lastScenario.year}.
             </p>
-          </div>
-        </FadeInOnView>
-
-        {/* Industry impact cards */}
-        <FadeInOnView delay={100}>
-          <h3 className="text-lg font-semibold text-ink tracking-tight mb-4">
-            Industries sustained
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            {byIndustry.map((ind, i) => (
-              <FadeInOnView key={ind.industry} delay={100 + i * 40}>
-                <div className="bg-white rounded-2xl border border-black/[.06] p-6 h-full">
-                  <h4 className="text-sm font-semibold text-ink tracking-tight mb-3">
-                    {ind.industry}
-                  </h4>
-                  <div className="text-xs text-muted leading-relaxed mb-3">
-                    {ind.detail}
-                  </div>
-
-                  {/* Workforce composition bar */}
-                  <div className="flex h-5 rounded-full overflow-hidden mb-3">
-                    <div
-                      style={{
-                        width: `${ind.undocumentedShare * 100}%`,
-                        backgroundColor: ECON_HEX.jobs,
-                      }}
-                    />
-                    <div
-                      style={{
-                        width: `${(ind.immigrantShare - ind.undocumentedShare) * 100}%`,
-                        backgroundColor: ECON_HEX.gdp,
-                      }}
-                    />
-                    <div
-                      className="flex-1 bg-black/[.06]"
-                    />
-                  </div>
-                  <div className="flex gap-3 mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ECON_HEX.jobs }} />
-                      <span className="text-[10px] text-muted">Undocumented</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ECON_HEX.gdp }} />
-                      <span className="text-[10px] text-muted">Other immigrant</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-black/[.06]" />
-                      <span className="text-[10px] text-muted">US-born</span>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-black/[.06] mb-3" />
-                  <p className="text-xs text-muted leading-relaxed">
-                    {ind.impact}
-                  </p>
-                  <p className="text-[11px] text-muted mt-2">{ind.sources}</p>
-                </div>
-              </FadeInOnView>
-            ))}
-          </div>
-        </FadeInOnView>
-
-        {/* GDP counterfactual chart */}
-        <FadeInOnView delay={120}>
-          <h3 className="text-lg font-semibold text-ink tracking-tight mb-2">
-            GDP with and without immigrants
-          </h3>
-          <p className="text-xs text-muted leading-relaxed max-w-xl mb-6">
-            CBO baseline projection vs. Peterson Institute mass deportation
-            scenario. The gap represents {formatB(gdpGap * 1_000_000_000_000)} in lost
-            economic output by {lastScenario.year}.
-          </p>
-          <div className="bg-white rounded-2xl border border-black/[.06] p-6 mb-10">
             <div className="flex gap-6 mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-4 h-[2px] rounded-full" style={{ backgroundColor: ECON_HEX.taxes }} />
@@ -255,7 +301,7 @@ export default function WhatTheyBuilt() {
                   " Z"
                 }
                 fill={ECON_HEX.taxes}
-                opacity={0.1}
+                opacity={0.08}
               />
 
               <path
@@ -301,112 +347,33 @@ export default function WhatTheyBuilt() {
                 );
               })}
             </svg>
-            <p className="text-[11px] text-muted mt-3">
+            <div className="text-[11px] text-muted mt-3">
               CBO, Peterson Institute for International Economics
-            </p>
-          </div>
-        </FadeInOnView>
-
-        {/* Tax contribution breakdown */}
-        <FadeInOnView delay={140}>
-          <h3 className="text-lg font-semibold text-ink tracking-tight mb-4">
-            Tax contributions
-          </h3>
-          <div className="bg-white rounded-2xl border border-black/[.06] p-6 mb-10 max-w-xl">
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-xs text-muted">Total immigrant taxes</span>
-                  <span className="text-xs font-medium text-ink tabular-nums">
-                    {formatB(national.totalTaxesPaid)}
-                  </span>
-                </div>
-                <div className="h-6 bg-black/[.03] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: "100%",
-                      backgroundColor: ECON_HEX.taxes,
-                    }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-xs text-muted">Undocumented household taxes</span>
-                  <span className="text-xs font-medium text-ink tabular-nums">
-                    {formatB(national.undocumentedTaxesPaid)}
-                  </span>
-                </div>
-                <div className="h-6 bg-black/[.03] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(national.undocumentedTaxesPaid / national.totalTaxesPaid) * 100}%`,
-                      backgroundColor: ECON_HEX.gdp,
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="pl-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted">Social Security</span>
-                  <span className="text-xs font-medium text-ink tabular-nums">
-                    {formatB(national.socialSecurityPaid)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted">Medicare</span>
-                  <span className="text-xs font-medium text-ink tabular-nums">
-                    {formatB(national.medicarePaid)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted">Federal income (ITIN)</span>
-                  <span className="text-xs font-medium text-ink tabular-nums">
-                    {formatB(national.undocumentedTaxesPaid - national.socialSecurityPaid - national.medicarePaid)}
-                  </span>
-                </div>
-              </div>
             </div>
-            <p className="text-[11px] text-muted mt-4">
-              American Immigration Council (2023 Census data), ITEP, Social
-              Security Administration
-            </p>
           </div>
         </FadeInOnView>
 
-        {/* Brookings impact note */}
-        <FadeInOnView delay={160}>
-          <div className="bg-bg rounded-xl border border-black/[.06] px-5 py-4 text-xs text-muted leading-relaxed max-w-2xl mb-10">
-            Net migration likely went negative in 2025 for the first time in
-            decades. Brookings estimates GDP growth reduced by 0.19 to 0.26
-            percentage points, with consumer spending declining $60 to $110
-            billion over 2025 and 2026, and breakeven monthly job growth
-            dropping to 20,000 to 50,000.
-            <span className="block mt-1 text-[11px]">
-              Brookings Institution, January 2026
-            </span>
+        {/* Closing stats — flowing narrative, not isolated callouts */}
+        <FadeInOnView>
+          <div className="border-t border-black/[.06] pt-10 max-w-2xl">
+            <div className="text-sm text-ink/80 leading-relaxed space-y-4">
+              <p>
+                Net migration likely went negative in 2025 for the first time in
+                decades. Brookings estimates GDP growth reduced by 0.19 to 0.26
+                percentage points, with consumer spending declining $60 to $110
+                billion over 2025 and 2026.
+              </p>
+              <p>
+                Over a 30-year horizon, the Cato Institute estimates all
+                immigrants produce a net fiscal surplus of{" "}
+                <span className="font-semibold text-ink">{formatB(national.catoFiscalSurplus30yr)}</span>.
+                Without immigrants, public debt would exceed 200% of GDP.
+              </p>
+            </div>
+            <div className="text-[11px] text-muted mt-4">
+              Brookings Institution (January 2026), Cato Institute (February 2026)
+            </div>
           </div>
-        </FadeInOnView>
-
-        {/* Cato 30-year note */}
-        <FadeInOnView delay={180}>
-          <div className="flex items-baseline gap-4 mb-6">
-            <span className="text-4xl md:text-5xl font-semibold tracking-tight" style={{ color: ECON_HEX.taxes }}>
-              {formatB(national.catoFiscalSurplus30yr)}
-            </span>
-            <span className="text-sm text-muted">
-              30-year net fiscal surplus from all immigrants
-            </span>
-          </div>
-          <p className="text-xs text-muted leading-relaxed max-w-xl">
-            Without immigrants, public debt would exceed 200% of GDP.
-            Undocumented contribution to deficit reduction alone: $1.7 trillion.
-          </p>
-          <p className="text-[11px] text-muted mt-2">
-            Cato Institute, February 2026
-          </p>
         </FadeInOnView>
       </div>
     </section>

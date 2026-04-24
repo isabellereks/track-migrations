@@ -13,6 +13,8 @@ interface Props {
   demographic: string;
   encounterType: MigrationLayer;
   visible: boolean;
+  visaClass?: string;
+  visaClassLabel?: string;
 }
 
 function formatMonth(m: string): string {
@@ -47,6 +49,8 @@ export default function DotTooltip({
   demographic,
   encounterType,
   visible,
+  visaClass,
+  visaClassLabel,
 }: Props) {
   if (!visible) return null;
 
@@ -72,6 +76,12 @@ export default function DotTooltip({
             <span className="text-[11px] text-muted">Type</span>
             <span className="text-[11px] font-medium text-ink">{LAYER_LABEL[encounterType]}</span>
           </div>
+          {visaClass && (
+            <div className="flex justify-between">
+              <span className="text-[11px] text-muted">Visa</span>
+              <span className="text-[11px] font-medium text-ink">{visaClassLabel ?? visaClass}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-[11px] text-muted">Location</span>
             <span className="text-[11px] font-medium text-ink">{sectorName(sector)}</span>
