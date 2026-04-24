@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import FadeInOnView from "@/components/ui/FadeInOnView";
+import AnimatedBar from "@/components/ui/AnimatedBar";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { getEconomicData } from "@/lib/economic-data";
 import { ECON_HEX, ENFORCE_HEX } from "@/lib/colors";
 
@@ -24,6 +26,11 @@ export default function WhatTheyBuilt() {
   const lastScenario = gdpScenarios[gdpScenarios.length - 1];
   const gdpGap = lastScenario.baseline - lastScenario.deportation;
 
+  const fmtBillions = useCallback(
+    (n: number) => formatB(n),
+    []
+  );
+
   return (
     <section id="economic" className="relative z-10 bg-bg border-t border-black/[.06]">
       <div className="max-w-5xl mx-auto px-8 pt-20 pb-24">
@@ -38,7 +45,7 @@ export default function WhatTheyBuilt() {
           in private homes.
         </p>
 
-        {/* Ledger comparison — no cards, just aligned typography */}
+        {/* Ledger comparison */}
         <FadeInOnView>
           <div className="mb-16">
             <div className="grid grid-cols-2 gap-x-16">
@@ -51,7 +58,7 @@ export default function WhatTheyBuilt() {
             </div>
             <div className="grid grid-cols-2 gap-x-16">
               {ledger.map((row, i) => (
-                <div key={`e-${i}`} className="contents">
+                <FadeInOnView key={`e-${i}`} delay={i * 60} as="div" className="contents">
                   <div className="pt-4 pb-4 border-b border-black/[.03]">
                     <div className="text-xl font-semibold text-ink tracking-tight tabular-nums">
                       {row.enforcement.value}
@@ -68,21 +75,31 @@ export default function WhatTheyBuilt() {
                       {row.contribution.label}
                     </div>
                   </div>
-                </div>
+                </FadeInOnView>
               ))}
             </div>
           </div>
         </FadeInOnView>
 
-        {/* Social Security — inline editorial, not a hero card */}
+        {/* Social Security */}
         <FadeInOnView>
           <div className="mb-16 max-w-2xl">
             <div className="text-sm text-ink/80 leading-relaxed">
               Undocumented workers paid{" "}
-              <span className="font-semibold text-ink">{formatB(national.socialSecurityPaid)}</span>{" "}
+              <AnimatedNumber
+                value={national.socialSecurityPaid}
+                format={fmtBillions}
+                className="font-semibold text-ink"
+                duration={1400}
+              />{" "}
               into Social Security in 2022. They are ineligible to collect
               benefits. They paid{" "}
-              <span className="font-semibold text-ink">{formatB(national.medicarePaid)}</span>{" "}
+              <AnimatedNumber
+                value={national.medicarePaid}
+                format={fmtBillions}
+                className="font-semibold text-ink"
+                duration={1400}
+              />{" "}
               into Medicare under the same terms. The gap between what they pay in
               and what they can draw out subsidizes the trust fund for all other
               beneficiaries.
@@ -93,52 +110,54 @@ export default function WhatTheyBuilt() {
           </div>
         </FadeInOnView>
 
-        {/* Industry breakdown — table rows, not card grid */}
+        {/* Industry breakdown */}
         <FadeInOnView>
           <div className="mb-16">
             <h3 className="text-lg font-semibold text-ink tracking-tight mb-6">
               Industries sustained
             </h3>
             <div className="space-y-0">
-              {byIndustry.map((ind) => {
+              {byIndustry.map((ind, i) => {
                 const undocPct = Math.round(ind.undocumentedShare * 100);
                 const otherImmPct = Math.round((ind.immigrantShare - ind.undocumentedShare) * 100);
                 return (
-                  <div key={ind.industry} className="py-5 border-b border-black/[.06] first:border-t">
-                    <div className="flex items-start gap-8">
-                      <div className="w-40 shrink-0">
-                        <div className="text-sm font-semibold text-ink tracking-tight">
-                          {ind.industry}
+                  <FadeInOnView key={ind.industry} delay={i * 80}>
+                    <div className="py-5 border-b border-black/[.06] first:border-t group cursor-default">
+                      <div className="flex items-start gap-8">
+                        <div className="w-40 shrink-0">
+                          <div className="text-sm font-semibold text-ink tracking-tight">
+                            {ind.industry}
+                          </div>
+                          <div className="text-[11px] text-muted mt-0.5">
+                            {ind.estimatedWorkers} workers
+                          </div>
                         </div>
-                        <div className="text-[11px] text-muted mt-0.5">
-                          {ind.estimatedWorkers} workers
+                        <div className="flex-1 min-w-0">
+                          <div className="flex h-6 rounded-full overflow-hidden mb-2">
+                            <AnimatedBar
+                              width={`${undocPct}%`}
+                              color={ECON_HEX.jobs}
+                              delay={i * 100}
+                              className=""
+                            />
+                            <AnimatedBar
+                              width={`${otherImmPct}%`}
+                              color={ECON_HEX.gdp}
+                              delay={i * 100 + 100}
+                              className=""
+                            />
+                            <div className="flex-1 bg-black/[.04]" />
+                          </div>
+                          <div className="text-xs text-muted leading-relaxed">
+                            {ind.detail}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex h-6 rounded-full overflow-hidden mb-2">
-                          <div
-                            style={{
-                              width: `${undocPct}%`,
-                              backgroundColor: ECON_HEX.jobs,
-                            }}
-                          />
-                          <div
-                            style={{
-                              width: `${otherImmPct}%`,
-                              backgroundColor: ECON_HEX.gdp,
-                            }}
-                          />
-                          <div className="flex-1 bg-black/[.04]" />
+                        <div className="w-56 shrink-0 text-xs text-muted leading-relaxed hidden md:block opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                          {ind.impact}
                         </div>
-                        <div className="text-xs text-muted leading-relaxed">
-                          {ind.detail}
-                        </div>
-                      </div>
-                      <div className="w-56 shrink-0 text-xs text-muted leading-relaxed hidden md:block">
-                        {ind.impact}
                       </div>
                     </div>
-                  </div>
+                  </FadeInOnView>
                 );
               })}
             </div>
@@ -162,7 +181,7 @@ export default function WhatTheyBuilt() {
           </div>
         </FadeInOnView>
 
-        {/* Tax contributions — streamlined, no card */}
+        {/* Tax contributions */}
         <FadeInOnView>
           <div className="mb-16 max-w-xl">
             <h3 className="text-lg font-semibold text-ink tracking-tight mb-6">
@@ -172,34 +191,32 @@ export default function WhatTheyBuilt() {
               <div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-ink font-medium">All immigrants</span>
-                  <span className="text-sm font-semibold text-ink tabular-nums">
-                    {formatB(national.totalTaxesPaid)}
-                  </span>
+                  <AnimatedNumber
+                    value={national.totalTaxesPaid}
+                    format={fmtBillions}
+                    className="text-sm font-semibold text-ink tabular-nums"
+                    duration={1200}
+                  />
                 </div>
                 <div className="h-5 bg-black/[.04] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: "100%",
-                      backgroundColor: ECON_HEX.taxes,
-                    }}
-                  />
+                  <AnimatedBar width="100%" color={ECON_HEX.taxes} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-ink font-medium">Undocumented households</span>
-                  <span className="text-sm font-semibold text-ink tabular-nums">
-                    {formatB(national.undocumentedTaxesPaid)}
-                  </span>
+                  <AnimatedNumber
+                    value={national.undocumentedTaxesPaid}
+                    format={fmtBillions}
+                    className="text-sm font-semibold text-ink tabular-nums"
+                    duration={1200}
+                  />
                 </div>
                 <div className="h-5 bg-black/[.04] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(national.undocumentedTaxesPaid / national.totalTaxesPaid) * 100}%`,
-                      backgroundColor: ECON_HEX.gdp,
-                    }}
+                  <AnimatedBar
+                    width={`${(national.undocumentedTaxesPaid / national.totalTaxesPaid) * 100}%`}
+                    color={ECON_HEX.gdp}
+                    delay={200}
                   />
                 </div>
                 <div className="mt-3 pl-1 space-y-1.5">
@@ -226,7 +243,7 @@ export default function WhatTheyBuilt() {
           </div>
         </FadeInOnView>
 
-        {/* GDP chart — full width, no card wrapper */}
+        {/* GDP chart — SVG line draw animation */}
         <FadeInOnView>
           <div className="mb-16">
             <h3 className="text-lg font-semibold text-ink tracking-tight mb-2">
@@ -247,113 +264,20 @@ export default function WhatTheyBuilt() {
                 <span className="text-[11px] text-muted">Mass deportation scenario</span>
               </div>
             </div>
-            <svg
-              viewBox={`0 0 600 ${chartH + 30}`}
-              className="w-full"
-              aria-label="GDP projection comparison chart"
-              role="img"
-            >
-              {[0, 0.25, 0.5, 0.75, 1].map((t) => {
-                const val = gdpMin - 1 + gdpRange * (1 - t);
-                const y = 10 + t * chartH;
-                return (
-                  <g key={t}>
-                    <line
-                      x1={60}
-                      y1={y}
-                      x2={580}
-                      y2={y}
-                      stroke="rgba(0,0,0,0.06)"
-                      strokeWidth={0.5}
-                    />
-                    <text
-                      x={55}
-                      y={y + 4}
-                      textAnchor="end"
-                      fontSize={10}
-                      fill="#86868B"
-                    >
-                      ${val.toFixed(0)}T
-                    </text>
-                  </g>
-                );
-              })}
-
-              <path
-                d={
-                  gdpScenarios
-                    .map((s, i) => {
-                      const x = 60 + (i / (gdpScenarios.length - 1)) * 520;
-                      const y = 10 + ((gdpMax + 1 - s.baseline) / gdpRange) * chartH;
-                      return `${i === 0 ? "M" : "L"}${x},${y}`;
-                    })
-                    .join(" ") +
-                  " " +
-                  gdpScenarios
-                    .slice()
-                    .reverse()
-                    .map((s, i) => {
-                      const x = 60 + ((gdpScenarios.length - 1 - i) / (gdpScenarios.length - 1)) * 520;
-                      const y = 10 + ((gdpMax + 1 - s.deportation) / gdpRange) * chartH;
-                      return `L${x},${y}`;
-                    })
-                    .join(" ") +
-                  " Z"
-                }
-                fill={ECON_HEX.taxes}
-                opacity={0.08}
-              />
-
-              <path
-                d={gdpScenarios
-                  .map((s, i) => {
-                    const x = 60 + (i / (gdpScenarios.length - 1)) * 520;
-                    const y = 10 + ((gdpMax + 1 - s.baseline) / gdpRange) * chartH;
-                    return `${i === 0 ? "M" : "L"}${x},${y}`;
-                  })
-                  .join(" ")}
-                fill="none"
-                stroke={ECON_HEX.taxes}
-                strokeWidth={2}
-              />
-
-              <path
-                d={gdpScenarios
-                  .map((s, i) => {
-                    const x = 60 + (i / (gdpScenarios.length - 1)) * 520;
-                    const y = 10 + ((gdpMax + 1 - s.deportation) / gdpRange) * chartH;
-                    return `${i === 0 ? "M" : "L"}${x},${y}`;
-                  })
-                  .join(" ")}
-                fill="none"
-                stroke={ENFORCE_HEX.arrest}
-                strokeWidth={2}
-                strokeDasharray="6 4"
-              />
-
-              {gdpScenarios.map((s, i) => {
-                const x = 60 + (i / (gdpScenarios.length - 1)) * 520;
-                return (
-                  <text
-                    key={s.year}
-                    x={x}
-                    y={chartH + 26}
-                    textAnchor="middle"
-                    fontSize={10}
-                    fill="#86868B"
-                  >
-                    {s.year}
-                  </text>
-                );
-              })}
-            </svg>
+            <GDPChart
+              scenarios={gdpScenarios}
+              chartH={chartH}
+              gdpMax={gdpMax}
+              gdpMin={gdpMin}
+              gdpRange={gdpRange}
+            />
             <div className="text-[11px] text-muted mt-3">
               CBO, Peterson Institute for International Economics
             </div>
           </div>
         </FadeInOnView>
 
-        {/* Closing stats — flowing narrative, not isolated callouts */}
+        {/* Closing stats */}
         <FadeInOnView>
           <div className="border-t border-black/[.06] pt-10 max-w-2xl">
             <div className="text-sm text-ink/80 leading-relaxed space-y-4">
@@ -366,7 +290,12 @@ export default function WhatTheyBuilt() {
               <p>
                 Over a 30-year horizon, the Cato Institute estimates all
                 immigrants produce a net fiscal surplus of{" "}
-                <span className="font-semibold text-ink">{formatB(national.catoFiscalSurplus30yr)}</span>.
+                <AnimatedNumber
+                  value={national.catoFiscalSurplus30yr}
+                  format={fmtBillions}
+                  className="font-semibold text-ink"
+                  duration={1600}
+                />.
                 Without immigrants, public debt would exceed 200% of GDP.
               </p>
             </div>
@@ -377,5 +306,94 @@ export default function WhatTheyBuilt() {
         </FadeInOnView>
       </div>
     </section>
+  );
+}
+
+function GDPChart({
+  scenarios,
+  chartH,
+  gdpMax,
+  gdpMin,
+  gdpRange,
+}: {
+  scenarios: { year: number; baseline: number; deportation: number }[];
+  chartH: number;
+  gdpMax: number;
+  gdpMin: number;
+  gdpRange: number;
+}) {
+  const baselinePath = scenarios
+    .map((s, i) => {
+      const x = 60 + (i / (scenarios.length - 1)) * 520;
+      const y = 10 + ((gdpMax + 1 - s.baseline) / gdpRange) * chartH;
+      return `${i === 0 ? "M" : "L"}${x},${y}`;
+    })
+    .join(" ");
+
+  const deportPath = scenarios
+    .map((s, i) => {
+      const x = 60 + (i / (scenarios.length - 1)) * 520;
+      const y = 10 + ((gdpMax + 1 - s.deportation) / gdpRange) * chartH;
+      return `${i === 0 ? "M" : "L"}${x},${y}`;
+    })
+    .join(" ");
+
+  const areaPath =
+    baselinePath +
+    " " +
+    scenarios
+      .slice()
+      .reverse()
+      .map((s, i) => {
+        const x = 60 + ((scenarios.length - 1 - i) / (scenarios.length - 1)) * 520;
+        const y = 10 + ((gdpMax + 1 - s.deportation) / gdpRange) * chartH;
+        return `L${x},${y}`;
+      })
+      .join(" ") +
+    " Z";
+
+  return (
+    <svg
+      viewBox={`0 0 600 ${chartH + 30}`}
+      className="w-full"
+      aria-label="GDP projection comparison chart"
+      role="img"
+    >
+      <style>{`
+        @media (prefers-reduced-motion: no-preference) {
+          .gdp-line { stroke-dasharray: 800; stroke-dashoffset: 800; animation: gdp-draw 1.4s cubic-bezier(0.32, 0.72, 0, 1) 0.2s forwards; }
+          .gdp-line-deport { stroke-dasharray: 800; stroke-dashoffset: 800; animation: gdp-draw 1.4s cubic-bezier(0.32, 0.72, 0, 1) 0.5s forwards; }
+          .gdp-area { opacity: 0; animation: gdp-fill 0.8s ease 1.2s forwards; }
+          @keyframes gdp-draw { to { stroke-dashoffset: 0; } }
+          @keyframes gdp-fill { to { opacity: 0.08; } }
+        }
+      `}</style>
+
+      {[0, 0.25, 0.5, 0.75, 1].map((t) => {
+        const val = gdpMin - 1 + gdpRange * (1 - t);
+        const y = 10 + t * chartH;
+        return (
+          <g key={t}>
+            <line x1={60} y1={y} x2={580} y2={y} stroke="rgba(0,0,0,0.06)" strokeWidth={0.5} />
+            <text x={55} y={y + 4} textAnchor="end" fontSize={10} fill="#86868B">
+              ${val.toFixed(0)}T
+            </text>
+          </g>
+        );
+      })}
+
+      <path d={areaPath} fill={ECON_HEX.taxes} className="gdp-area" opacity={0.08} />
+      <path d={baselinePath} fill="none" stroke={ECON_HEX.taxes} strokeWidth={2} className="gdp-line" />
+      <path d={deportPath} fill="none" stroke={ENFORCE_HEX.arrest} strokeWidth={2} strokeDasharray="6 4" className="gdp-line-deport" />
+
+      {scenarios.map((s, i) => {
+        const x = 60 + (i / (scenarios.length - 1)) * 520;
+        return (
+          <text key={s.year} x={x} y={chartH + 26} textAnchor="middle" fontSize={10} fill="#86868B">
+            {s.year}
+          </text>
+        );
+      })}
+    </svg>
   );
 }

@@ -2,10 +2,14 @@
 
 import { useMemo } from "react";
 import FadeInOnView from "@/components/ui/FadeInOnView";
+import AnimatedBar from "@/components/ui/AnimatedBar";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { getSampleData } from "@/lib/sample-data";
 import { sectorDisplayName, SECTOR_CENTROIDS } from "@/lib/geo";
 
 const BAR_COLOR = "#CC6B63";
+
+const fmtK = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : `${Math.round(n / 1000)}k`;
 
 export default function WhereTheyCrossed() {
   const data = useMemo(() => getSampleData(), []);
@@ -21,6 +25,9 @@ export default function WhereTheyCrossed() {
   }, [data]);
 
   const maxTotal = sectorTotals[0]?.total ?? 1;
+  const filtered = sectorTotals
+    .filter(({ sector }) => sector in SECTOR_CENTROIDS)
+    .slice(0, 12);
 
   return (
     <section className="relative z-10 bg-white border-t border-black/[.06]">
@@ -33,32 +40,27 @@ export default function WhereTheyCrossed() {
           where they occurred. The southwest border accounts for the vast
           majority of all encounters.
         </p>
-        <FadeInOnView>
-          <div className="space-y-3">
-            {sectorTotals
-              .filter(({ sector }) => sector in SECTOR_CENTROIDS)
-              .slice(0, 12)
-              .map(({ sector, total }) => (
-                <div key={sector} className="flex items-center gap-4">
-                  <span className="text-xs font-medium text-ink tracking-tight w-36 shrink-0 truncate">
-                    {sectorDisplayName(sector)}
-                  </span>
-                  <div className="flex-1 h-7 bg-black/[.03] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(total / maxTotal) * 100}%`,
-                        backgroundColor: BAR_COLOR,
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted tabular-nums w-16 text-right">
-                    {(total / 1000).toFixed(0)}k
-                  </span>
+        <div className="space-y-3">
+          {filtered.map(({ sector, total }, i) => (
+            <FadeInOnView key={sector} delay={i * 30}>
+              <div className="flex items-center gap-4 group">
+                <span className="text-xs font-medium text-ink tracking-tight w-36 shrink-0 truncate">
+                  {sectorDisplayName(sector)}
+                </span>
+                <div className="flex-1 h-7 bg-black/[.03] rounded-full overflow-hidden">
+                  <AnimatedBar
+                    width={`${(total / maxTotal) * 100}%`}
+                    color={BAR_COLOR}
+                    delay={i * 60}
+                  />
                 </div>
-              ))}
-          </div>
-        </FadeInOnView>
+                <span className="text-xs text-muted tabular-nums w-16 text-right">
+                  <AnimatedNumber value={total} format={fmtK} duration={800 + i * 60} />
+                </span>
+              </div>
+            </FadeInOnView>
+          ))}
+        </div>
       </div>
     </section>
   );

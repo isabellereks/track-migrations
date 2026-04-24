@@ -14,8 +14,8 @@ import {
   topVisaClasses,
   totalUpToMonth,
 } from "@/lib/sample-data";
-import { FILTER_LAYERS } from "@/lib/types";
-import type { FilterPreset } from "@/lib/types";
+import { FILTER_LAYERS, STATUS_LAYERS } from "@/lib/types";
+import type { FilterPreset, FilterMode, StatusPreset, MigrationLayer } from "@/lib/types";
 import type { HoveredDot } from "./USMap";
 
 const USMap = dynamic(() => import("./USMap"), { ssr: false });
@@ -29,7 +29,10 @@ export default function DataMap({ revealProgress }: Props) {
   const months = useMemo(() => getMonths(), []);
   const [monthIndex, setMonthIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
+  const [filterMode, setFilterMode] = useState<FilterMode>("pathway");
   const [activePreset, setActivePreset] = useState<FilterPreset>("all");
+  const [statusPreset, setStatusPreset] = useState<StatusPreset>("all");
+  const [borderView, setBorderView] = useState<"entered" | "stopped">("entered");
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 900, height: 560 });
   const [hoveredDot, setHoveredDot] = useState<HoveredDot | null>(null);
@@ -51,10 +54,28 @@ export default function DataMap({ revealProgress }: Props) {
   const started = monthIndex >= 0;
   const currentMonth = months[Math.max(0, monthIndex)] ?? "2020-01";
 
+  const currentPresetKey = filterMode === "pathway" ? activePreset : statusPreset;
+
+  const activeLayers = useMemo((): Set<MigrationLayer> => {
+    if (filterMode === "status") {
+      return new Set(STATUS_LAYERS[statusPreset]);
+    }
+    return new Set(FILTER_LAYERS[activePreset]);
+  }, [filterMode, activePreset, statusPreset]);
+
   const filteredData = useMemo(() => {
-    const layers = new Set(FILTER_LAYERS[activePreset]);
-    return data.filter((r) => layers.has(r.layer));
-  }, [data, activePreset]);
+    return data.filter((r) => {
+      if (!activeLayers.has(r.layer)) return false;
+      if (filterMode === "pathway" && activePreset === "border") {
+        if (borderView === "entered") {
+          return r.layer === "border-entered" || r.layer === "border-inadmissible";
+        } else {
+          return r.layer === "border-turnedaway" || r.layer === "border-inadmissible";
+        }
+      }
+      return true;
+    });
+  }, [data, activeLayers, filterMode, activePreset, borderView]);
 
   const total = useMemo(
     () => totalUpToMonth(filteredData, currentMonth),
@@ -117,6 +138,23 @@ export default function DataMap({ revealProgress }: Props) {
 
   const visible = revealProgress > 0.5;
 
+  const handleModeChange = useCallback((mode: FilterMode) => {
+    setFilterMode(mode);
+    if (mode === "pathway") {
+      setActivePreset("all");
+    } else {
+      setStatusPreset("all");
+    }
+  }, []);
+
+  const handlePresetChange = useCallback((preset: string) => {
+    if (filterMode === "pathway") {
+      setActivePreset(preset as FilterPreset);
+    } else {
+      setStatusPreset(preset as StatusPreset);
+    }
+  }, [filterMode]);
+
   return (
     <div
       className="fixed inset-0 z-10"
@@ -128,13 +166,30 @@ export default function DataMap({ revealProgress }: Props) {
     >
       <div className="absolute inset-0 bg-bg" />
 
-      {/* Filter bar — centered top */}
-      <div className="absolute top-5 inset-x-0 z-20 hidden sm:flex justify-center">
+      {/* Mode toggle + Filter bar — centered top */}
+      <div className="absolute top-5 inset-x-0 z-20 hidden sm:flex flex-col items-center gap-2">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleModeChange("pathway")}
+            className={`text-[10px] font-medium px-2.5 py-1 rounded-full transition-colors ${
+              filterMode === "pathway" ? "bg-ink text-white" : "text-muted hover:text-ink"
+            }`}
+          >
+            By pathway
+          </button>
+          <button
+            onClick={() => handleModeChange("status")}
+            className={`text-[10px] font-medium px-2.5 py-1 rounded-full transition-colors ${
+              filterMode === "status" ? "bg-ink text-white" : "text-muted hover:text-ink"
+            }`}
+          >
+            By status
+          </button>
+        </div>
         <FilterBar
-          active={activePreset}
-          onChange={(preset) => {
-            setActivePreset(preset);
-          }}
+          mode={filterMode}
+          active={currentPresetKey}
+          onChange={handlePresetChange}
         />
       </div>
 
@@ -149,7 +204,8 @@ export default function DataMap({ revealProgress }: Props) {
             currentMonth={started ? currentMonth : ""}
             width={dimensions.width}
             height={dimensions.height}
-            activePreset={activePreset}
+            activeLayers={activeLayers}
+            borderView={borderView}
             onHover={setHoveredDot}
           />
         )}
@@ -158,12 +214,15 @@ export default function DataMap({ revealProgress }: Props) {
       {/* Sidebar — right edge, vertically centered */}
       <div className="absolute right-5 top-1/2 -translate-y-1/2 hidden lg:block z-20">
         <MapSidebar
-          activePreset={activePreset}
+          filterMode={filterMode}
+          activePreset={currentPresetKey}
           data={filteredData}
           currentMonth={currentMonth}
           totalEncounters={total}
           topCountries={topCountries}
           topVisas={topVisas}
+          borderView={borderView}
+          onBorderViewChange={setBorderView}
         />
       </div>
 
@@ -181,6 +240,7 @@ export default function DataMap({ revealProgress }: Props) {
           visible={true}
           visaClass={hoveredDot.visaClass}
           visaClassLabel={hoveredDot.visaClassLabel}
+          arrestAggregate={hoveredDot.arrestAggregate}
         />
       )}
 
@@ -192,7 +252,7 @@ export default function DataMap({ revealProgress }: Props) {
         playing={playing}
         onTogglePlay={togglePlay}
         onReplay={replay}
-        legend={<MapLegend activePreset={activePreset} />}
+        legend={<MapLegend activePreset={currentPresetKey} />}
       />
     </div>
   );

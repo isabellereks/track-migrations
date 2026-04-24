@@ -75,35 +75,35 @@ export default function WhereTheyCameFrom() {
                   flexGrow: total,
                   backgroundColor: REGION_HEX[region],
                 }}
-                className="transition-opacity hover:opacity-100 first:rounded-l-full last:rounded-r-full"
+                className="transition-all duration-300 hover:brightness-110 first:rounded-l-full last:rounded-r-full cursor-default"
               />
             ))}
           </div>
         </FadeInOnView>
 
-        <FadeInOnView>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-            {byCountry.slice(0, 16).map((c, i) => (
-              <div key={c.name} className="flex items-center gap-3 py-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-0">
+          {byCountry.slice(0, 16).map((c, i) => (
+            <FadeInOnView key={c.name} delay={i * 30}>
+              <div className="flex items-center gap-3 py-2.5 border-b border-black/[.03] group cursor-default">
                 <span className="text-xs text-muted w-5 text-right tabular-nums">
                   {i + 1}
                 </span>
                 <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  className="w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-200 group-hover:scale-[2]"
                   style={{
                     backgroundColor: REGION_HEX[c.region] ?? REGION_HEX.other,
                   }}
                 />
-                <span className="text-sm font-medium text-ink tracking-tight flex-1">
+                <span className="text-sm font-medium text-ink tracking-tight flex-1 group-hover:translate-x-0.5 transition-transform duration-200">
                   {c.name}
                 </span>
-                <span className="text-xs text-muted tabular-nums">
+                <span className="text-xs text-muted tabular-nums opacity-60 group-hover:opacity-100 transition-opacity duration-200">
                   {(c.total / 1_000_000).toFixed(2)}M
                 </span>
               </div>
-            ))}
-          </div>
-        </FadeInOnView>
+            </FadeInOnView>
+          ))}
+        </div>
       </div>
     </section>
   );

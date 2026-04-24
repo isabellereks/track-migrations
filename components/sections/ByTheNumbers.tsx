@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import FadeInOnView from "@/components/ui/FadeInOnView";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { getSampleData, aggregateByMonth } from "@/lib/sample-data";
 
 export default function ByTheNumbers() {
@@ -40,6 +41,9 @@ export default function ByTheNumbers() {
     return `${names[parseInt(mo) - 1]} ${y}`;
   };
 
+  const fmtM = useCallback((n: number) => `${(n / 1_000_000).toFixed(1)}M`, []);
+  const fmtK = useCallback((n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : `${Math.round(n / 1000)}k`, []);
+
   return (
     <section className="relative z-10 bg-bg border-t border-black/[.06]">
       <div className="max-w-5xl mx-auto px-8 pt-20 pb-24">
@@ -50,9 +54,12 @@ export default function ByTheNumbers() {
         <FadeInOnView>
           <div className="space-y-8">
             <div className="flex items-baseline gap-4">
-              <span className="text-5xl md:text-6xl font-semibold text-ink tracking-tight leading-none">
-                {(stats.totalEncounters / 1_000_000).toFixed(1)}M
-              </span>
+              <AnimatedNumber
+                value={stats.totalEncounters}
+                format={fmtM}
+                className="text-5xl md:text-6xl font-semibold text-ink tracking-tight leading-none"
+                duration={1600}
+              />
               <span className="text-sm text-muted">
                 total encounters recorded between FY2016 and FY2025
               </span>
@@ -61,38 +68,56 @@ export default function ByTheNumbers() {
             <div className="h-px bg-black/[.06]" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-16">
-              <div>
-                <div className="text-2xl font-semibold text-ink tracking-tight">
-                  {formatMonth(stats.peak.month)}
+              <FadeInOnView delay={100}>
+                <div>
+                  <div className="text-2xl font-semibold text-ink tracking-tight">
+                    {formatMonth(stats.peak.month)}
+                  </div>
+                  <div className="text-xs text-muted mt-1">
+                    Peak month with{" "}
+                    <AnimatedNumber value={stats.peak.total} format={fmtK} duration={1000} />
+                    {" "}encounters
+                  </div>
                 </div>
-                <div className="text-xs text-muted mt-1">
-                  Peak month with {(stats.peak.total / 1000).toFixed(0)}k encounters
+              </FadeInOnView>
+              <FadeInOnView delay={150}>
+                <div>
+                  <div className="text-2xl font-semibold text-ink tracking-tight">
+                    {stats.topNat[0]}
+                  </div>
+                  <div className="text-xs text-muted mt-1">
+                    Most common nationality at{" "}
+                    <AnimatedNumber value={stats.topNat[1]} format={fmtM} duration={1000} />
+                    {" "}encounters
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="text-2xl font-semibold text-ink tracking-tight">
-                  {stats.topNat[0]}
+              </FadeInOnView>
+              <FadeInOnView delay={200}>
+                <div>
+                  <AnimatedNumber
+                    value={stats.demographics.uac}
+                    format={fmtK}
+                    className="text-2xl font-semibold text-ink tracking-tight"
+                    duration={1000}
+                  />
+                  <div className="text-xs text-muted mt-1">
+                    Unaccompanied children encountered at the border
+                  </div>
                 </div>
-                <div className="text-xs text-muted mt-1">
-                  Most common nationality at {(stats.topNat[1] / 1_000_000).toFixed(1)}M encounters
+              </FadeInOnView>
+              <FadeInOnView delay={250}>
+                <div>
+                  <AnimatedNumber
+                    value={stats.demographics.family}
+                    format={fmtK}
+                    className="text-2xl font-semibold text-ink tracking-tight"
+                    duration={1000}
+                  />
+                  <div className="text-xs text-muted mt-1">
+                    Individuals traveling as part of a family unit
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="text-2xl font-semibold text-ink tracking-tight">
-                  {(stats.demographics.uac / 1000).toFixed(0)}k
-                </div>
-                <div className="text-xs text-muted mt-1">
-                  Unaccompanied children encountered at the border
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-semibold text-ink tracking-tight">
-                  {(stats.demographics.family / 1000).toFixed(0)}k
-                </div>
-                <div className="text-xs text-muted mt-1">
-                  Individuals traveling as part of a family unit
-                </div>
-              </div>
+              </FadeInOnView>
             </div>
           </div>
         </FadeInOnView>

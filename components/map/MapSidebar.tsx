@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { EncounterRecord } from "@/lib/types";
+import type { EncounterRecord, FilterMode, StatusPreset } from "@/lib/types";
 import { DOT_STYLES } from "@/lib/types";
 import { REGION_HEX, type OriginRegion } from "@/lib/colors";
 
@@ -13,18 +13,47 @@ const PRESET_LABEL: Record<FilterPreset, string> = {
   border: "border encounters",
   overstays: "visa overstays",
   uncounted: "uncounted (est.)",
-  arrests: "arrests",
+  arrests: "ICE arrests",
 };
 
-const SHOW_VISA_TOGGLE: Set<FilterPreset> = new Set(["all", "legal", "overstays"]);
+const STATUS_PRESET_LABEL: Record<StatusPreset, string> = {
+  all: "all migration",
+  approved: "approved immigration",
+  pending: "pending status",
+  undocumented: "undocumented",
+  arrests: "ICE arrests",
+};
+
+const STATUS_DESCRIPTION: Record<StatusPreset, string | null> = {
+  all: null,
+  approved: "have valid immigration status",
+  pending: "in the system, waiting for a decision",
+  undocumented: "no visa, no pending case",
+  arrests: null,
+};
+
+const STATUS_DISCLAIMER: Record<StatusPreset, string | null> = {
+  all: null,
+  approved: null,
+  pending: "These people entered through legal or monitored channels. They have court dates, paperwork, and in many cases work permits.",
+  undocumented: "Over half entered the US legally — through airports with valid visas — and stayed after their visa expired.",
+  arrests: null,
+};
+
+const SHOW_VISA_TOGGLE: Set<string> = new Set(["all", "legal", "overstays", "approved"]);
+
+export type BorderView = "entered" | "stopped";
 
 interface Props {
-  activePreset: FilterPreset;
+  filterMode: FilterMode;
+  activePreset: string;
   data: EncounterRecord[];
   currentMonth: string;
   totalEncounters: number;
   topCountries: Array<{ name: string; region: string; count: number }>;
   topVisas: Array<{ visaClass: string; label: string; count: number }>;
+  borderView: BorderView;
+  onBorderViewChange: (v: BorderView) => void;
 }
 
 function formatNumber(n: number): string {
@@ -43,24 +72,24 @@ function formatMonth(m: string): string {
 }
 
 const VISA_COLORS: Record<string, string> = {
-  "H1B": "#5B7FB5",
-  "H2A": "#7EBC8E",
-  "H2B": "#56A86C",
-  "L1": "#7090C8",
-  "TN": "#4080C0",
+  "H1B": "#4CA064",
+  "H2A": "#3D9456",
+  "H2B": "#3D9456",
+  "L1": "#4CA064",
+  "TN": "#4CA064",
   "O1": "#AF52DE",
-  "E2": "#D9A766",
-  "E1": "#CC9058",
+  "E2": "#6BBF80",
+  "E1": "#6BBF80",
   "P1": "#CC6B63",
   "E3": "#50A0AE",
   "R1": "#9462B4",
   "OS": "#C89554",
   "DV": "#7EBC8E",
-  "IR": "#D9A766",
-  "F2A": "#CC9058",
-  "EB-1": "#7090C8",
-  "EB-2": "#5B7FB5",
-  "EB-3": "#4080C0",
+  "IR": "#6BBF80",
+  "F2A": "#6BBF80",
+  "EB-1": "#4CA064",
+  "EB-2": "#4CA064",
+  "EB-3": "#4CA064",
   "REF": "#AF52DE",
 };
 
@@ -69,12 +98,15 @@ function visaColor(visaClass: string): string {
 }
 
 export default function MapSidebar({
+  filterMode,
   activePreset,
   data,
   currentMonth,
   totalEncounters,
   topCountries,
   topVisas,
+  borderView,
+  onBorderViewChange,
 }: Props) {
   const [groupBy, setGroupBy] = useState<"country" | "visa">("country");
 
@@ -85,6 +117,36 @@ export default function MapSidebar({
   }, [data, currentMonth]);
 
   const showToggle = SHOW_VISA_TOGGLE.has(activePreset);
+  const isBorder = activePreset === "border" && filterMode === "pathway";
+  const isStatus = filterMode === "status";
+
+  // Compute label
+  let label: string;
+  if (isBorder) {
+    label = borderView === "entered"
+      ? "entered through the border"
+      : "stopped at the border";
+  } else if (isStatus) {
+    label = STATUS_PRESET_LABEL[activePreset as StatusPreset] ?? "encounters";
+  } else {
+    label = PRESET_LABEL[activePreset as FilterPreset] ?? "encounters";
+  }
+
+  // Description and disclaimer
+  let description: string | null = null;
+  let disclaimer: string | null = null;
+
+  if (isBorder) {
+    description = borderView === "entered"
+      ? "entered and were processed into the US system"
+      : "turned away or expelled";
+    disclaimer = borderView === "entered"
+      ? "“Entered” means processed into the immigration system — not necessarily still here. Many have pending cases or have since been removed."
+      : "These people did not enter the United States.";
+  } else if (isStatus && activePreset !== "all" && activePreset !== "arrests") {
+    description = STATUS_DESCRIPTION[activePreset as StatusPreset] ?? null;
+    disclaimer = STATUS_DISCLAIMER[activePreset as StatusPreset] ?? null;
+  }
 
   return (
     <div className="w-56 space-y-3">
@@ -94,8 +156,13 @@ export default function MapSidebar({
           {formatNumber(totalEncounters)}
         </div>
         <div className="text-[11px] text-muted mt-1.5">
-          {PRESET_LABEL[activePreset]} through {formatMonth(currentMonth)}
+          {label} through {formatMonth(currentMonth)}
         </div>
+        {description && (
+          <div className="text-[10px] text-muted/70 mt-1">
+            {description}
+          </div>
+        )}
         <div className="mt-3 flex items-baseline gap-2">
           <span className="text-sm font-semibold text-ink tabular-nums">
             {formatNumber(monthTotal)}
@@ -106,6 +173,31 @@ export default function MapSidebar({
 
       {/* Top origins / visas */}
       <div className="bg-white rounded-2xl border border-black/[.06] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        {isBorder && (
+          <div className="flex bg-black/[.04] rounded-full p-0.5 mb-3">
+            <button
+              onClick={() => onBorderViewChange("entered")}
+              className={`flex-1 text-[10px] font-medium px-3 py-1 rounded-full transition-colors ${
+                borderView === "entered"
+                  ? "bg-white text-ink shadow-sm"
+                  : "text-muted"
+              }`}
+            >
+              Entered
+            </button>
+            <button
+              onClick={() => onBorderViewChange("stopped")}
+              className={`flex-1 text-[10px] font-medium px-3 py-1 rounded-full transition-colors ${
+                borderView === "stopped"
+                  ? "bg-white text-ink shadow-sm"
+                  : "text-muted"
+              }`}
+            >
+              Stopped
+            </button>
+          </div>
+        )}
+
         {showToggle && (
           <div className="flex bg-black/[.04] rounded-full p-0.5 mb-3">
             <button
@@ -131,7 +223,7 @@ export default function MapSidebar({
           </div>
         )}
 
-        {!showToggle && (
+        {!showToggle && !isBorder && (
           <div className="text-xs font-medium text-muted tracking-tight mb-3">
             Top origins
           </div>
@@ -178,6 +270,15 @@ export default function MapSidebar({
           </div>
         )}
       </div>
+
+      {/* Disclaimer */}
+      {disclaimer && (
+        <div className="bg-white rounded-2xl border border-black/[.06] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="text-[10px] text-muted/70 leading-relaxed">
+            {disclaimer}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

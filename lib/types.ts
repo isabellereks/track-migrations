@@ -11,7 +11,8 @@ export type MigrationLayer =
   | "border-inadmissible"
   | "border-turnedaway"
   | "overstay"
-  | "uncounted";
+  | "uncounted"
+  | "ice-arrest";
 
 export type FilterPreset = "all" | "legal" | "border" | "overstays" | "uncounted" | "arrests";
 
@@ -20,27 +21,55 @@ export const FILTER_LAYERS: Record<FilterPreset, MigrationLayer[]> = {
     "legal-employment", "legal-family", "legal-diversity", "temp-worker",
     "refugee", "asylum",
     "border-entered", "border-inadmissible", "border-turnedaway",
-    "overstay", "uncounted",
+    "overstay", "uncounted", "ice-arrest",
   ],
   legal: ["legal-employment", "legal-family", "legal-diversity", "temp-worker", "refugee", "asylum"],
   border: ["border-entered", "border-inadmissible", "border-turnedaway"],
   overstays: ["overstay"],
   uncounted: ["uncounted"],
-  arrests: ["border-entered", "overstay"],
+  arrests: ["ice-arrest"],
+};
+
+export type FilterMode = "pathway" | "status";
+
+export type StatusPreset = "all" | "approved" | "pending" | "undocumented" | "arrests";
+
+export const STATUS_LAYERS: Record<StatusPreset, MigrationLayer[]> = {
+  all: [
+    "legal-employment", "legal-family", "legal-diversity", "temp-worker",
+    "refugee", "asylum",
+    "border-entered", "border-inadmissible",
+    "overstay", "uncounted", "ice-arrest",
+  ],
+  approved: [
+    "legal-employment", "legal-family", "legal-diversity", "temp-worker",
+    "refugee",
+  ],
+  pending: [
+    "asylum",
+    "border-entered",
+    "border-inadmissible",
+  ],
+  undocumented: [
+    "overstay",
+    "uncounted",
+  ],
+  arrests: ["ice-arrest"],
 };
 
 export const LAYER_LABEL: Record<MigrationLayer, string> = {
-  "legal-employment": "Employment-based",
-  "legal-family": "Family-sponsored",
-  "legal-diversity": "Diversity visa",
-  "temp-worker": "Temporary worker",
+  "legal-employment": "Employment (H-1B, O-1, EB)",
+  "legal-family": "Family-sponsored (IR, F1-F4)",
+  "legal-diversity": "Diversity visa (DV lottery)",
+  "temp-worker": "Temporary worker (H-2A, H-2B)",
   refugee: "Refugee",
   asylum: "Asylum",
-  "border-entered": "Border (entered)",
-  "border-inadmissible": "Port of entry",
-  "border-turnedaway": "Turned away",
+  "border-entered": "Entered through border",
+  "border-inadmissible": "Presented at port of entry",
+  "border-turnedaway": "Stopped at border",
   overstay: "Visa overstay",
   uncounted: "Uncounted (est.)",
+  "ice-arrest": "ICE arrest",
 };
 
 export interface DotStyle {
@@ -53,17 +82,18 @@ export interface DotStyle {
 }
 
 export const DOT_STYLES: Record<MigrationLayer, DotStyle> = {
-  "legal-employment":    { fill: "#7090C8", radius: 2.5, opacity: 0.8 },
-  "legal-family":        { fill: "#D9A766", radius: 2.5, opacity: 0.8 },
+  "legal-employment":    { fill: "#4CA064", radius: 2.5, opacity: 0.8 },
+  "legal-family":        { fill: "#6BBF80", radius: 2.5, opacity: 0.8 },
   "legal-diversity":     { fill: "#7EBC8E", radius: 2.5, opacity: 0.8 },
-  "temp-worker":         { fill: "#5B7FB5", radius: 2.5, opacity: 0.75 },
+  "temp-worker":         { fill: "#3D9456", radius: 2.5, opacity: 0.75 },
   refugee:               { fill: "#AF52DE", radius: 2.5, opacity: 0.8 },
   asylum:                { fill: "#D98080", radius: 2.5, opacity: 0.8 },
   "border-entered":      { fill: "#C8534A", radius: 2.5, opacity: 0.8 },
   "border-inadmissible": { fill: "#C8534A", radius: 2.5, opacity: 0.5, stroke: "#C8534A", strokeWidth: 0.5 },
   "border-turnedaway":   { fill: "#C8534A", radius: 1.8, opacity: 0.3 },
   overstay:              { fill: "#C89554", radius: 2.5, opacity: 0.7 },
-  uncounted:             { fill: "#AEAEB2", radius: 2.0, opacity: 0.25 },
+  uncounted:             { fill: "#AEAEB2", radius: 2.5, opacity: 0.25 },
+  "ice-arrest":          { fill: "#3A6BD4", radius: 3.5, opacity: 0.85 },
 };
 
 export type ParticlePhase =

@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import FadeInOnView from "@/components/ui/FadeInOnView";
+import AnimatedBar from "@/components/ui/AnimatedBar";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import {
   getEnforcementData,
   aggregateEnforcementByMonth,
@@ -66,7 +68,7 @@ export default function WhatHappenedNext() {
                 { label: "Released with NTA", pct: 68, color: ENFORCE_HEX.removed },
                 { label: "Removed at border", pct: 24, color: ENFORCE_HEX.removed },
                 { label: "Entered ICE pipeline", pct: 8, color: ENFORCE_HEX.arrest },
-              ].map((row) => (
+              ].map((row, i) => (
                 <div key={row.label}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-sm font-medium text-ink tracking-tight">
@@ -77,12 +79,10 @@ export default function WhatHappenedNext() {
                     </span>
                   </div>
                   <div className="h-5 bg-black/[.03] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${row.pct}%`,
-                        backgroundColor: row.color,
-                      }}
+                    <AnimatedBar
+                      width={`${row.pct}%`}
+                      color={row.color}
+                      delay={i * 150}
                     />
                   </div>
                 </div>
@@ -95,9 +95,11 @@ export default function WhatHappenedNext() {
         <FadeInOnView delay={60}>
           <div className="space-y-8 mb-12">
             <div className="flex items-baseline gap-4">
-              <span className="text-5xl md:text-6xl font-semibold text-ink tracking-tight leading-none">
-                {ENFORCEMENT_STATS.currentDetained.toLocaleString()}
-              </span>
+              <AnimatedNumber
+                value={ENFORCEMENT_STATS.currentDetained}
+                className="text-5xl md:text-6xl font-semibold text-ink tracking-tight leading-none"
+                duration={1600}
+              />
               <span className="text-sm text-muted">
                 people detained by ICE as of April 2026
               </span>
@@ -172,7 +174,7 @@ export default function WhatHappenedNext() {
                     aria-label={`${formatMonth(m.month)}: ${m.arrests.toLocaleString()} arrests`}
                   >
                     <div
-                      className="w-full rounded-t-sm transition-opacity"
+                      className="w-full rounded-t-sm transition-all duration-200 group-hover:brightness-110"
                       style={{
                         height: `${h}%`,
                         opacity: isSelected ? 1 : 0.6,

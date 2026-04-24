@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { FILTER_LAYERS, DOT_STYLES, LAYER_LABEL } from "@/lib/types";
-import type { FilterPreset, MigrationLayer } from "@/lib/types";
+import { FILTER_LAYERS, STATUS_LAYERS, DOT_STYLES, LAYER_LABEL } from "@/lib/types";
+import type { FilterPreset, StatusPreset, MigrationLayer } from "@/lib/types";
 
 interface Props {
-  activePreset: FilterPreset;
+  activePreset: string;
 }
 
 const GROUPED: Record<string, { label: string; layers: MigrationLayer[] }> = {
@@ -13,10 +13,18 @@ const GROUPED: Record<string, { label: string; layers: MigrationLayer[] }> = {
   border: { label: "Border", layers: ["border-entered", "border-inadmissible", "border-turnedaway"] },
   overstay: { label: "Overstay", layers: ["overstay"] },
   uncounted: { label: "Uncounted", layers: ["uncounted"] },
+  arrests: { label: "ICE Arrests", layers: ["ice-arrest"] },
 };
 
+function getLayersForPreset(preset: string): MigrationLayer[] {
+  if (preset in FILTER_LAYERS) return FILTER_LAYERS[preset as FilterPreset];
+  if (preset in STATUS_LAYERS) return STATUS_LAYERS[preset as StatusPreset];
+  return [];
+}
+
 export default function MapLegend({ activePreset }: Props) {
-  const activeLayers = useMemo(() => new Set(FILTER_LAYERS[activePreset]), [activePreset]);
+  const layers = useMemo(() => getLayersForPreset(activePreset), [activePreset]);
+  const activeLayers = useMemo(() => new Set(layers), [layers]);
 
   const showGrouped = activePreset === "all";
 
@@ -45,7 +53,6 @@ export default function MapLegend({ activePreset }: Props) {
     );
   }
 
-  const layers = FILTER_LAYERS[activePreset];
   return (
     <div className="flex items-center gap-5">
       {layers.map((layer) => {

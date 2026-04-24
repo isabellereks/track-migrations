@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import type { FilterPreset } from "@/lib/types";
+import type { FilterPreset, FilterMode, StatusPreset } from "@/lib/types";
 
-const PRESETS: { key: FilterPreset; label: string }[] = [
+const PATHWAY_PRESETS: { key: FilterPreset; label: string }[] = [
   { key: "all", label: "All" },
   { key: "legal", label: "Legal" },
   { key: "border", label: "Border" },
@@ -12,17 +12,28 @@ const PRESETS: { key: FilterPreset; label: string }[] = [
   { key: "arrests", label: "Arrests" },
 ];
 
+const STATUS_PRESETS: { key: StatusPreset; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "approved", label: "Approved" },
+  { key: "pending", label: "Pending" },
+  { key: "undocumented", label: "Undocumented" },
+  { key: "arrests", label: "Arrests" },
+];
+
 interface Props {
-  active: FilterPreset;
-  onChange: (preset: FilterPreset) => void;
+  mode: FilterMode;
+  active: string;
+  onChange: (preset: string) => void;
 }
 
-export default function FilterBar({ active, onChange }: Props) {
+export default function FilterBar({ mode, active, onChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pillStyle, setPillStyle] = useState<{ left: number; width: number }>({
     left: 0,
     width: 0,
   });
+
+  const presets = mode === "pathway" ? PATHWAY_PRESETS : STATUS_PRESETS;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -35,7 +46,7 @@ export default function FilterBar({ active, onChange }: Props) {
       left: activeBtn.offsetLeft,
       width: activeBtn.offsetWidth,
     });
-  }, [active]);
+  }, [active, mode]);
 
   return (
     <div
@@ -50,7 +61,7 @@ export default function FilterBar({ active, onChange }: Props) {
           transition: "left 320ms cubic-bezier(0.32, 0.72, 0, 1), width 320ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       />
-      {PRESETS.map(({ key, label }) => (
+      {presets.map(({ key, label }) => (
         <button
           key={key}
           data-preset={key}
