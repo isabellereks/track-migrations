@@ -46,14 +46,10 @@ export default function WhereTheyCameFrom() {
       className="relative z-10 bg-bg border-t border-black/[.06]"
     >
       <div className="max-w-5xl mx-auto px-8 pt-20 pb-24">
-        <div className="text-[13px] font-medium text-muted tracking-tight mb-2">
-          02 · Where they came from
-        </div>
         <h2 className="text-3xl md:text-4xl font-semibold text-ink tracking-tight leading-[1.1] mb-10">
-          Origin countries &amp; regions
+          Where they came from
         </h2>
 
-        {/* Region summary bar */}
         <FadeInOnView>
           <div className="flex flex-wrap gap-x-5 gap-y-2 mb-6">
             {byRegion.map(({ region, total }) => (
@@ -85,8 +81,7 @@ export default function WhereTheyCameFrom() {
           </div>
         </FadeInOnView>
 
-        {/* Country rankings */}
-        <FadeInOnView delay={80}>
+        <FadeInOnView>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
             {byCountry.slice(0, 16).map((c, i) => (
               <div key={c.name} className="flex items-center gap-3 py-1">

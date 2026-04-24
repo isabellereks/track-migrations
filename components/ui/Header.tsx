@@ -9,30 +9,31 @@ export default function Header() {
         TRACK MIGRATION
       </Link>
       <nav className="flex items-center gap-6 text-xs text-muted">
-        <Link
-          href="/"
+        <a
+          href="#"
+          onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           className="hover:text-ink transition-colors"
         >
           Map
-        </Link>
-        <Link
+        </a>
+        <a
           href="#origins"
           className="hover:text-ink transition-colors"
         >
           Origins
-        </Link>
-        <Link
+        </a>
+        <a
           href="#reasons"
           className="hover:text-ink transition-colors"
         >
           Reasons
-        </Link>
-        <Link
+        </a>
+        <a
           href="#about"
           className="hover:text-ink transition-colors"
         >
           About
-        </Link>
+        </a>
       </nav>
     </header>
   );

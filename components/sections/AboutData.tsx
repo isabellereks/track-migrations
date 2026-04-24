@@ -30,8 +30,32 @@ const SOURCES = [
   {
     name: "Deportation Data Project",
     description:
-      "FOIA-obtained CBP and ICE data with improved documentation and individual-level records.",
+      "FOIA-obtained CBP and ICE data with improved documentation and individual-level records. Arrests, detentions, and removals by nationality, criminal history, and ICE Area of Responsibility.",
     url: "https://deportationdata.org/data.html",
+  },
+  {
+    name: "TRAC Immigration",
+    description:
+      "ICE detention population snapshots, criminal history breakdown, immigration court backlogs, and NTA filings. Maintained by Syracuse University.",
+    url: "https://tracreports.org",
+  },
+  {
+    name: "American Immigration Council",
+    description:
+      "State-by-state immigrant economic activity, taxes paid, and spending power based on Census data.",
+    url: "https://americanimmigrationcouncil.org",
+  },
+  {
+    name: "Economic Policy Institute",
+    description:
+      "Unauthorized immigrant workforce analysis including industry breakdown, wage gaps, and labor standards enforcement ratios.",
+    url: "https://epi.org",
+  },
+  {
+    name: "Cato Institute",
+    description:
+      "30-year fiscal impact analysis of immigration. Net fiscal surplus estimates and public debt projections.",
+    url: "https://cato.org",
   },
 ];
 
@@ -42,19 +66,16 @@ export default function AboutData() {
       className="relative z-10 bg-white border-t border-black/[.06]"
     >
       <div className="max-w-5xl mx-auto px-8 pt-20 pb-24">
-        <div className="text-[13px] font-medium text-muted tracking-tight mb-2">
-          05 · About this data
-        </div>
         <h2 className="text-3xl md:text-4xl font-semibold text-ink tracking-tight leading-[1.1] mb-4">
-          Sources &amp; methodology
+          Sources and methodology
         </h2>
         <p className="text-sm text-muted leading-relaxed max-w-2xl mb-10">
           This site combines data from multiple US government sources.
           Border encounter data (CBP) measures crossings. Settlement data
           (Census ACS) measures where foreign-born people live. Admission
           category data (USCIS) measures how people were legally classified.
-          These are distinct populations — crossing ≠ settlement ≠ legal
-          admission.
+          These are distinct populations: crossing, settlement, and legal
+          admission each tell a different part of the story.
         </p>
 
         <FadeInOnView>
@@ -79,7 +100,7 @@ export default function AboutData() {
                     rel="noopener noreferrer"
                     className="text-[11px] font-medium text-muted hover:text-ink transition-colors shrink-0 border border-black/[.06] rounded-lg px-3 py-1.5"
                   >
-                    View source ↗
+                    View source
                   </a>
                 </div>
               </div>
@@ -87,18 +108,18 @@ export default function AboutData() {
           </div>
         </FadeInOnView>
 
-        <FadeInOnView delay={80}>
+        <FadeInOnView>
           <div className="mt-10 bg-bg rounded-xl border border-black/[.06] px-5 py-4">
             <h3 className="text-xs font-semibold text-ink tracking-tight mb-2">
-              Caveats &amp; limitations
+              Caveats and limitations
             </h3>
             <ul className="text-xs text-muted leading-relaxed space-y-1.5 list-disc list-inside">
               <li>
-                Encounter counts include repeat crossings — the same
+                Encounter counts include repeat crossings; the same
                 individual may be counted multiple times.
               </li>
               <li>
-                ACS foreign-born estimates lag by ~2 years and include all
+                ACS foreign-born estimates lag by approximately two years and include all
                 foreign-born residents regardless of immigration status.
               </li>
               <li>

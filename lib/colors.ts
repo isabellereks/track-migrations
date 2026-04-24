@@ -7,12 +7,12 @@ export type MigrationReason =
   | "other";
 
 export const REASON_HEX: Record<MigrationReason, string> = {
-  employment: "#7090C8",
-  family: "#D9A766",
-  asylum: "#D98080",
-  refugee: "#AF52DE",
-  diversity: "#7EBC8E",
-  other: "#C9CBD1",
+  employment: "#4080C0",
+  family: "#CC9058",
+  asylum: "#CC6B63",
+  refugee: "#9462B4",
+  diversity: "#56A86C",
+  other: "#8E8E93",
 };
 
 export const REASON_LABEL: Record<MigrationReason, string> = {
@@ -35,14 +35,14 @@ export type OriginRegion =
   | "other";
 
 export const REGION_HEX: Record<OriginRegion, string> = {
-  mexico: "#C8534A",
-  "central-america": "#D9A766",
-  "south-america": "#E8C57E",
-  caribbean: "#5AA5A5",
-  asia: "#4F8B58",
-  africa: "#9B6BC5",
-  europe: "#7090C8",
-  other: "#AEAEB2",
+  mexico: "#CC6B63",
+  "central-america": "#CC9058",
+  "south-america": "#C8AE48",
+  caribbean: "#50A0AE",
+  asia: "#56A86C",
+  africa: "#9462B4",
+  europe: "#4080C0",
+  other: "#8E8E93",
 };
 
 export const REGION_LABEL: Record<OriginRegion, string> = {
@@ -76,12 +76,38 @@ export const ENCOUNTER_LABEL: Record<EncounterType, string> = {
   "cbp-one": "CBP One appointment",
 };
 
-export const NEUTRAL_FILL = "#EFEDE8";
-export const NEUTRAL_STROKE = "#E5E5E5";
+export type CriminalHistory = "convicted" | "pending-charges" | "immigration-only";
+
+export const CRIMINAL_HISTORY_HEX: Record<CriminalHistory, string> = {
+  convicted: "#CC6B63",
+  "pending-charges": "#E0A08A",
+  "immigration-only": "#A0C4D8",
+};
+
+export const CRIMINAL_HISTORY_LABEL: Record<CriminalHistory, string> = {
+  convicted: "Convicted",
+  "pending-charges": "Pending charges",
+  "immigration-only": "Immigration only",
+};
+
+export const ENFORCE_HEX = {
+  arrest: "#CC6B63",
+  detained: "#E0A08A",
+  removed: "#8E8E93",
+};
+
+export const ECON_HEX = {
+  taxes: "#56A86C",
+  gdp: "#7AC0A0",
+  jobs: "#A0D4B8",
+};
+
+export const NEUTRAL_FILL = "#F0F0F0";
+export const NEUTRAL_STROKE = "#DCDCDC";
 
 export const SETTLEMENT_GRADIENT = {
-  from: "#F0EDE8",
-  to: "#7090C8",
+  from: "#F0F0F0",
+  to: "#4080C0",
 };
 
 export function lerpHex(a: string, b: string, t: number): string {

@@ -10,13 +10,16 @@
   },
   "dependencies": {
     "@number-flow/react": "^0.6.0",
+    "cobe": "^2.0.1",
     "d3-geo": "^3.1.1",
     "framer-motion": "^12.38.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-grab": "^0.1.32",
     "topojson-client": "^3.1.0",
-    "us-atlas": "^3.0.1"
+    "us-atlas": "^3.0.1",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

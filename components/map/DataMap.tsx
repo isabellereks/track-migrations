@@ -3,13 +3,18 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import TimeScrubber from "./TimeScrubber";
+import FilterBar from "./FilterBar";
+import MapSidebar from "./MapSidebar";
+import DotTooltip from "./DotTooltip";
 import {
   getSampleData,
   getMonths,
   topNationalities,
   totalUpToMonth,
 } from "@/lib/sample-data";
-import { REGION_HEX, type OriginRegion } from "@/lib/colors";
+import { FILTER_LAYERS } from "@/lib/types";
+import type { FilterPreset } from "@/lib/types";
+import type { HoveredDot, MapPhase } from "./USMap";
 
 const USMap = dynamic(() => import("./USMap"), { ssr: false });
 
@@ -22,9 +27,11 @@ export default function DataMap({ revealProgress }: Props) {
   const months = useMemo(() => getMonths(), []);
   const [monthIndex, setMonthIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [phase, setPhase] = useState<MapPhase>("encounters");
+  const [activePreset, setActivePreset] = useState<FilterPreset>("all");
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 900, height: 560 });
+  const [hoveredDot, setHoveredDot] = useState<HoveredDot | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -40,41 +47,57 @@ export default function DataMap({ revealProgress }: Props) {
     return () => ro.disconnect();
   }, []);
 
-  const currentMonth = months[monthIndex] ?? "2016-01";
+  const currentMonth = months[monthIndex] ?? "2020-01";
+
+  const filteredData = useMemo(() => {
+    const layers = new Set(FILTER_LAYERS[activePreset]);
+    return data.filter((r) => layers.has(r.layer));
+  }, [data, activePreset]);
+
   const total = useMemo(
-    () => totalUpToMonth(data, currentMonth),
-    [data, currentMonth]
+    () => totalUpToMonth(filteredData, currentMonth),
+    [filteredData, currentMonth]
   );
   const topCountries = useMemo(
-    () => topNationalities(data, currentMonth, 5),
-    [data, currentMonth]
+    () => topNationalities(filteredData, currentMonth, 5),
+    [filteredData, currentMonth]
   );
 
   const togglePlay = useCallback(() => {
     setPlaying((p) => !p);
   }, []);
 
+  const replay = useCallback(() => {
+    setPhase("encounters");
+    setMonthIndex(0);
+    setPlaying(true);
+  }, []);
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (playing) {
-      intervalRef.current = setInterval(() => {
-        setMonthIndex((i) => {
-          if (i >= months.length - 1) {
-            setPlaying(false);
-            return i;
-          }
-          return i + 1;
-        });
-      }, 300);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (!playing) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = null;
+      return;
     }
+
+    const tick = () => {
+      setMonthIndex((i) => {
+        if (i >= months.length - 1) {
+          setPlaying(false);
+          return i;
+        }
+        return i + 1;
+      });
+      timerRef.current = setTimeout(tick, 180);
+    };
+
+    timerRef.current = setTimeout(tick, 180);
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [playing, months.length]);
 
-  // Auto-play when map is first revealed
   const hasAutoPlayed = useRef(false);
   useEffect(() => {
     if (revealProgress > 0.95 && !hasAutoPlayed.current) {
@@ -96,9 +119,28 @@ export default function DataMap({ revealProgress }: Props) {
       }}
     >
       <div className="absolute inset-0 bg-bg" />
+
+      {/* Filter bar — centered top */}
+      <div className="absolute top-5 inset-x-0 z-20 hidden sm:flex justify-center">
+        <FilterBar
+          active={activePreset}
+          onChange={(preset) => {
+            setActivePreset(preset);
+            if (preset === "arrests") {
+              setPlaying(false);
+              setPhase("transition");
+              setTimeout(() => setPhase("arrests"), 200);
+            } else {
+              setPhase("encounters");
+            }
+          }}
+        />
+      </div>
+
+      {/* Map container — centered */}
       <div
         ref={containerRef}
-        className="absolute inset-0 flex items-center justify-center pt-12"
+        className="absolute inset-0 flex items-center justify-center"
       >
         {dimensions.width > 0 && (
           <USMap
@@ -106,36 +148,39 @@ export default function DataMap({ revealProgress }: Props) {
             currentMonth={currentMonth}
             width={dimensions.width}
             height={dimensions.height}
+            phase={phase}
+            activePreset={activePreset}
+            onHover={setHoveredDot}
           />
         )}
-
-        {/* Top-5 sidebar */}
-        <div className="absolute top-16 right-4 w-52 bg-white/90 backdrop-blur-2xl rounded-2xl border border-black/[.06] p-4 shadow-sm">
-          <div className="text-[10px] font-medium text-muted uppercase tracking-widest mb-3">
-            Top nationalities
-          </div>
-          <div className="space-y-2">
-            {topCountries.map((c, i) => (
-              <div key={c.name} className="flex items-center gap-2">
-                <span className="text-xs text-muted w-3">{i + 1}</span>
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{
-                    backgroundColor:
-                      REGION_HEX[c.region as OriginRegion] ?? REGION_HEX.other,
-                  }}
-                />
-                <span className="text-xs font-medium text-ink tracking-tight truncate flex-1">
-                  {c.name}
-                </span>
-                <span className="text-[11px] text-muted tabular-nums">
-                  {(c.count / 1000).toFixed(0)}k
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
+
+      {/* Sidebar — right edge, vertically centered */}
+      <div className="absolute right-5 top-1/2 -translate-y-1/2 hidden lg:block z-20">
+        <MapSidebar
+          phase={phase}
+          activePreset={activePreset}
+          data={filteredData}
+          currentMonth={currentMonth}
+          totalEncounters={total}
+          topCountries={topCountries}
+        />
+      </div>
+
+      {/* Tooltip */}
+      {hoveredDot && (
+        <DotTooltip
+          x={hoveredDot.x}
+          y={hoveredDot.y}
+          nationality={hoveredDot.nationalityName}
+          region={hoveredDot.region}
+          sector={hoveredDot.sector}
+          month={hoveredDot.month}
+          demographic={hoveredDot.demographic}
+          encounterType={hoveredDot.layer}
+          visible={true}
+        />
+      )}
 
       <TimeScrubber
         months={months}
@@ -144,6 +189,7 @@ export default function DataMap({ revealProgress }: Props) {
         totalEncounters={total}
         playing={playing}
         onTogglePlay={togglePlay}
+        onReplay={replay}
       />
     </div>
   );

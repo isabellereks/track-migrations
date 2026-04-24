@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Track Migration",
+  title: "Track Migrations",
   description:
     "Interactive visualization of immigration to the United States — where people crossed, where they settled, and why they came.",
 };

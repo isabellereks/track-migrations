@@ -52,10 +52,10 @@ export default function FadeInOnView({
     return () => io.disconnect();
   }, []);
 
-  const transition = `opacity 320ms cubic-bezier(0.32,0.72,0,1) ${delay}ms, transform 320ms cubic-bezier(0.32,0.72,0,1) ${delay}ms`;
+  const transition = `opacity 180ms cubic-bezier(0.32,0.72,0,1) ${delay}ms, transform 180ms cubic-bezier(0.32,0.72,0,1) ${delay}ms`;
   const mergedStyle: CSSProperties = {
     opacity: shown ? 1 : 0,
-    transform: shown ? "translateY(0)" : "translateY(8px)",
+    transform: shown ? "translateY(0)" : "translateY(3px)",
     transition,
     willChange: shown ? undefined : "opacity, transform",
     ...style,

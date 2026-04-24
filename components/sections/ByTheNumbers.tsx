@@ -40,58 +40,62 @@ export default function ByTheNumbers() {
     return `${names[parseInt(mo) - 1]} ${y}`;
   };
 
-  const items = [
-    {
-      label: "Total encounters",
-      value: (stats.totalEncounters / 1_000_000).toFixed(1) + "M",
-      sub: "FY2016 – FY2025",
-    },
-    {
-      label: "Peak month",
-      value: formatMonth(stats.peak.month),
-      sub: `${(stats.peak.total / 1000).toFixed(0)}k encounters`,
-    },
-    {
-      label: "Most common nationality",
-      value: stats.topNat[0],
-      sub: `${(stats.topNat[1] / 1_000_000).toFixed(1)}M encounters`,
-    },
-    {
-      label: "Unaccompanied minors",
-      value: (stats.demographics.uac / 1000).toFixed(0) + "k",
-      sub: "Unaccompanied children encountered",
-    },
-    {
-      label: "Family unit individuals",
-      value: (stats.demographics.family / 1000).toFixed(0) + "k",
-      sub: "Individuals in family units",
-    },
-  ];
-
   return (
     <section className="relative z-10 bg-bg border-t border-black/[.06]">
       <div className="max-w-5xl mx-auto px-8 pt-20 pb-24">
-        <div className="text-[13px] font-medium text-muted tracking-tight mb-2">
-          04 · By the numbers
-        </div>
         <h2 className="text-3xl md:text-4xl font-semibold text-ink tracking-tight leading-[1.1] mb-10">
-          Key statistics
+          By the numbers
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {items.map((item, i) => (
-            <FadeInOnView key={item.label} delay={i * 60}>
-              <div className="bg-white rounded-2xl border border-black/[.06] p-6">
-                <div className="text-[11px] font-medium text-muted uppercase tracking-widest mb-3">
-                  {item.label}
+
+        <FadeInOnView>
+          <div className="space-y-8">
+            <div className="flex items-baseline gap-4">
+              <span className="text-5xl md:text-6xl font-semibold text-ink tracking-tight leading-none">
+                {(stats.totalEncounters / 1_000_000).toFixed(1)}M
+              </span>
+              <span className="text-sm text-muted">
+                total encounters recorded between FY2016 and FY2025
+              </span>
+            </div>
+
+            <div className="h-px bg-black/[.06]" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-16">
+              <div>
+                <div className="text-2xl font-semibold text-ink tracking-tight">
+                  {formatMonth(stats.peak.month)}
                 </div>
-                <div className="text-2xl md:text-3xl font-semibold text-ink tracking-tight leading-tight">
-                  {item.value}
+                <div className="text-xs text-muted mt-1">
+                  Peak month with {(stats.peak.total / 1000).toFixed(0)}k encounters
                 </div>
-                <div className="text-xs text-muted mt-1">{item.sub}</div>
               </div>
-            </FadeInOnView>
-          ))}
-        </div>
+              <div>
+                <div className="text-2xl font-semibold text-ink tracking-tight">
+                  {stats.topNat[0]}
+                </div>
+                <div className="text-xs text-muted mt-1">
+                  Most common nationality at {(stats.topNat[1] / 1_000_000).toFixed(1)}M encounters
+                </div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-ink tracking-tight">
+                  {(stats.demographics.uac / 1000).toFixed(0)}k
+                </div>
+                <div className="text-xs text-muted mt-1">
+                  Unaccompanied children encountered at the border
+                </div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-ink tracking-tight">
+                  {(stats.demographics.family / 1000).toFixed(0)}k
+                </div>
+                <div className="text-xs text-muted mt-1">
+                  Individuals traveling as part of a family unit
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeInOnView>
       </div>
     </section>
   );

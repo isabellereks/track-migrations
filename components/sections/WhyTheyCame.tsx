@@ -51,20 +51,16 @@ export default function WhyTheyCame() {
       className="relative z-10 bg-white border-t border-black/[.06]"
     >
       <div className="max-w-5xl mx-auto px-8 pt-20 pb-24">
-        <div className="text-[13px] font-medium text-muted tracking-tight mb-2">
-          03 · Why they came
-        </div>
         <h2 className="text-3xl md:text-4xl font-semibold text-ink tracking-tight leading-[1.1] mb-4">
-          Admission category by country
+          Why they came
         </h2>
         <p className="text-sm text-muted leading-relaxed max-w-2xl mb-10">
           Lawful permanent residents are classified by admission category.
-          The breakdown varies dramatically by country of origin — India is
-          overwhelmingly employment-based, while Central American countries
-          are heavily asylum and family.
+          The breakdown varies by country of origin: India skews toward
+          employment-based visas, while Central American countries are
+          predominantly asylum and family reunification.
         </p>
 
-        {/* Legend */}
         <FadeInOnView>
           <div className="flex flex-wrap gap-x-5 gap-y-2 mb-8">
             {REASONS.map((r) => (
@@ -81,7 +77,7 @@ export default function WhyTheyCame() {
           </div>
         </FadeInOnView>
 
-        <FadeInOnView delay={60}>
+        <FadeInOnView>
           <div className="space-y-3">
             {SAMPLE_REASONS.map((c) => {
               const isExpanded = expanded === c.country;
@@ -92,6 +88,7 @@ export default function WhyTheyCame() {
                   onClick={() =>
                     setExpanded(isExpanded ? null : c.country)
                   }
+                  aria-expanded={isExpanded}
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-sm font-medium text-ink tracking-tight w-28 shrink-0 truncate">
@@ -114,31 +111,36 @@ export default function WhyTheyCame() {
                       })}
                     </div>
                   </div>
-                  {isExpanded && (
-                    <div className="mt-3 ml-32 grid grid-cols-3 gap-x-8 gap-y-2 animate-fade-rise">
-                      {REASONS.map((r) => (
-                        <div key={r} className="flex items-center gap-2">
-                          <span
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: REASON_HEX[r] }}
-                          />
-                          <span className="text-xs text-muted">
-                            {REASON_LABEL[r]}
-                          </span>
-                          <span className="text-xs font-medium text-ink tabular-nums ml-auto">
-                            {c[r]}%
-                          </span>
-                        </div>
-                      ))}
+                  <div
+                    className="accordion"
+                    data-open={isExpanded}
+                  >
+                    <div className="accordion-inner">
+                      <div className="mt-3 ml-32 grid grid-cols-3 gap-x-8 gap-y-2">
+                        {REASONS.map((r) => (
+                          <div key={r} className="flex items-center gap-2">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: REASON_HEX[r] }}
+                            />
+                            <span className="text-xs text-muted">
+                              {REASON_LABEL[r]}
+                            </span>
+                            <span className="text-xs font-medium text-ink tabular-nums ml-auto">
+                              {c[r]}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </button>
               );
             })}
           </div>
         </FadeInOnView>
 
-        <FadeInOnView delay={120}>
+        <FadeInOnView>
           <div className="mt-10 bg-bg rounded-xl border border-black/[.06] px-5 py-4 text-xs text-muted leading-relaxed max-w-2xl">
             These categories represent how the US government classifies
             admissions, not necessarily individual motivations. Lawful
