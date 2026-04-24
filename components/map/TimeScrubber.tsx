@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { RiPlayFill, RiPauseFill, RiRestartLine } from "@remixicon/react";
 
 interface Props {
   months: string[];
@@ -10,6 +11,7 @@ interface Props {
   playing: boolean;
   onTogglePlay: () => void;
   onReplay: () => void;
+  legend?: ReactNode;
 }
 
 function formatMonth(month: string): string {
@@ -33,6 +35,7 @@ export default function TimeScrubber({
   playing,
   onTogglePlay,
   onReplay,
+  legend,
 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -96,8 +99,9 @@ export default function TimeScrubber({
     return () => window.removeEventListener("keydown", handleKey);
   }, [currentIndex, months.length, onChange, onTogglePlay]);
 
-  const progress = months.length > 1 ? currentIndex / (months.length - 1) : 0;
-  const currentMonth = months[currentIndex] ?? "2016-01";
+  const clampedIndex = Math.max(0, currentIndex);
+  const progress = months.length > 1 ? clampedIndex / (months.length - 1) : 0;
+  const currentMonth = months[clampedIndex] ?? "2020-01";
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-30 px-4 pb-4 sm:px-6 sm:pb-6">
@@ -110,14 +114,9 @@ export default function TimeScrubber({
             aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? (
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-                <rect x="2" y="1.5" width="2.5" height="9" rx="0.75" />
-                <rect x="7.5" y="1.5" width="2.5" height="9" rx="0.75" />
-              </svg>
+              <RiPauseFill size={14} />
             ) : (
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-                <path d="M3.5 1.5v9l6.5-4.5z" />
-              </svg>
+              <RiPlayFill size={14} />
             )}
           </button>
           <div className="flex items-baseline gap-2 min-w-0 flex-1">
@@ -133,10 +132,7 @@ export default function TimeScrubber({
             className="w-8 h-8 rounded-full bg-ink/[.08] text-ink flex items-center justify-center hover:bg-ink/[.14] active:scale-[0.94] transition-colors shrink-0"
             aria-label="Replay animation"
           >
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4.75 1.5v3.25H8" />
-              <path d="M4.75 4.75A5.25 5.25 0 1 1 2.75 8" />
-            </svg>
+            <RiRestartLine size={14} />
           </button>
         </div>
 
@@ -186,6 +182,11 @@ export default function TimeScrubber({
             <div className="w-3 h-3 rounded-full bg-ink -mt-0.5 -ml-[5px] border-2 border-white shadow-sm" />
           </div>
         </div>
+        {legend && (
+          <div className="mt-2.5 pt-2 border-t border-black/[.04]">
+            {legend}
+          </div>
+        )}
       </div>
     </div>
   );

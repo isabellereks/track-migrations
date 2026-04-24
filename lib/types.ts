@@ -60,7 +60,7 @@ export const DOT_STYLES: Record<MigrationLayer, DotStyle> = {
   "border-inadmissible": { fill: "#C8534A", radius: 2.5, opacity: 0.5, stroke: "#C8534A", strokeWidth: 0.5 },
   "border-turnedaway":   { fill: "#C8534A", radius: 1.8, opacity: 0.3 },
   overstay:              { fill: "#C89554", radius: 2.5, opacity: 0.7 },
-  uncounted:             { fill: "#AEAEB2", radius: 2.5, opacity: 0.35, dashed: true },
+  uncounted:             { fill: "#AEAEB2", radius: 2.0, opacity: 0.25 },
 };
 
 export type ParticlePhase =

@@ -6,8 +6,6 @@ import { REGION_HEX, type OriginRegion } from "@/lib/colors";
 
 import type { FilterPreset } from "@/lib/types";
 
-type Phase = "encounters" | "transition" | "arrests";
-
 const PRESET_LABEL: Record<FilterPreset, string> = {
   all: "total encounters",
   legal: "legal admissions",
@@ -18,7 +16,6 @@ const PRESET_LABEL: Record<FilterPreset, string> = {
 };
 
 interface Props {
-  phase: Phase;
   activePreset: FilterPreset;
   data: EncounterRecord[];
   currentMonth: string;
@@ -42,7 +39,6 @@ function formatMonth(m: string): string {
 }
 
 export default function MapSidebar({
-  phase,
   activePreset,
   data,
   currentMonth,

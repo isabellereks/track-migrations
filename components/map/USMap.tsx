@@ -4,15 +4,12 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { geoAlbersUsa, geoPath } from "d3-geo";
 import * as topojson from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
-import { CRIMINAL_HISTORY_HEX } from "@/lib/colors";
-import { SETTLEMENT_DESTINATIONS, ICE_AOR_CENTROIDS } from "@/lib/geo";
-import type { EncounterRecord, Particle, MigrationLayer, FilterPreset } from "@/lib/types";
+import { SETTLEMENT_DESTINATIONS } from "@/lib/geo";
+import type { EncounterRecord, Particle, FilterPreset } from "@/lib/types";
 import { DOT_STYLES, FILTER_LAYERS } from "@/lib/types";
 import type { OriginRegion } from "@/lib/colors";
 
 const MAX_PARTICLES = typeof window !== "undefined" && window.innerWidth < 768 ? 6000 : 15000;
-
-export type MapPhase = "encounters" | "transition" | "arrests";
 
 export interface HoveredDot {
   x: number;
@@ -23,8 +20,7 @@ export interface HoveredDot {
   sector: string;
   month: string;
   demographic: string;
-  layer: MigrationLayer;
-  isArrest?: boolean;
+  layer: import("@/lib/types").MigrationLayer;
 }
 
 interface Props {
@@ -32,17 +28,8 @@ interface Props {
   currentMonth: string;
   width: number;
   height: number;
-  phase: MapPhase;
   activePreset: FilterPreset;
   onHover?: (dot: HoveredDot | null) => void;
-}
-
-function quadBezier(
-  x0: number, y0: number, cx: number, cy: number,
-  x1: number, y1: number, t: number
-): [number, number] {
-  const u = 1 - t;
-  return [u * u * x0 + 2 * u * t * cx + t * t * x1, u * u * y0 + 2 * u * t * cy + t * t * y1];
 }
 
 const AIRPORT_ENTRIES: Record<string, [number, number]> = {
@@ -67,18 +54,19 @@ const ORIGIN_DIR: Record<string, { angle: number; spread: number }> = {
   other:             { angle: Math.PI * 0.5,   spread: Math.PI },
 };
 
-export default function USMap({ data, currentMonth, width, height, phase, activePreset, onHover }: Props) {
+export default function USMap({ data, currentMonth, width, height, activePreset, onHover }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const trailCanvasRef = useRef<HTMLCanvasElement>(null);
   const hitCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const prevMonthRef = useRef<string>("");
-  const prevPhaseRef = useRef<MapPhase>("encounters");
-  const transitionStartRef = useRef<number>(0);
   const [topoData, setTopoData] = useState<Topology | null>(null);
 
   const activeLayers = useMemo(() => new Set(FILTER_LAYERS[activePreset]), [activePreset]);
+  const activeLayersRef = useRef(activeLayers);
+  activeLayersRef.current = activeLayers;
+  const presetRef = useRef(activePreset);
+  presetRef.current = activePreset;
 
   useEffect(() => {
     import("us-atlas/counties-10m.json").then((mod) => {
@@ -127,16 +115,6 @@ export default function USMap({ data, currentMonth, width, height, phase, active
     })).filter((d) => d.projected !== null);
   }, [projection]);
 
-  const projectedAORs = useMemo(() => {
-    const result: Record<string, [number, number]> = {};
-    for (const [name, [lat, lng]] of Object.entries(ICE_AOR_CENTROIDS)) {
-      const p = projection([lng, lat]);
-      if (p) result[name] = p as [number, number];
-    }
-    return result;
-  }, [projection]);
-  const aorNames = useMemo(() => Object.keys(projectedAORs), [projectedAORs]);
-
   const pickDestination = useCallback((region: string) => {
     const weights = projectedDestinations.map((d) => {
       const affinity = d.affinities[region] ?? 1;
@@ -156,7 +134,7 @@ export default function USMap({ data, currentMonth, width, height, phase, active
     const newParticles: Particle[] = [];
 
     for (const record of monthData) {
-      const count = Math.max(1, Math.round(record.count / 100));
+      const count = Math.max(1, Math.round(record.count / 300));
       const style = DOT_STYLES[record.layer];
       const isBorder = record.layer.startsWith("border-");
       const isLegal = record.layer.startsWith("legal-") || record.layer === "refugee" || record.layer === "asylum";
@@ -167,7 +145,7 @@ export default function USMap({ data, currentMonth, width, height, phase, active
         const dest = pickDestination(record.region);
         if (!dest.projected) continue;
 
-        const spreadPx = dest.spread * width * 0.08;
+        const spreadPx = dest.spread * width * 0.14;
         let tx = 0, ty = 0, inside = false;
         for (let attempt = 0; attempt < 5; attempt++) {
           const ja = Math.random() * Math.PI * 2;
@@ -195,16 +173,6 @@ export default function USMap({ data, currentMonth, width, height, phase, active
           sy = ty + (Math.random() - 0.5) * 100;
         }
 
-        const canArrest = record.layer === "border-entered" || record.layer === "overstay";
-        const shouldArrest = canArrest && Math.random() < 0.08;
-        let arrestX = 0, arrestY = 0;
-        if (shouldArrest && aorNames.length > 0) {
-          const aor = aorNames[Math.floor(Math.random() * aorNames.length)];
-          const [ax, ay] = projectedAORs[aor];
-          arrestX = ax + (Math.random() - 0.5) * 30;
-          arrestY = ay + (Math.random() - 0.5) * 30;
-        }
-
         newParticles.push({
           x: sx, y: sy, targetX: tx, targetY: ty,
           opacity: 0, birthMonth: month, settled: false,
@@ -215,10 +183,10 @@ export default function USMap({ data, currentMonth, width, height, phase, active
           demographic: record.demographic,
           entryType: isBorder ? "southern-border" : isOverstay ? "airport" : isLegal ? "airport" : "unknown",
           phase: record.layer === "uncounted" ? "settled" : "incoming",
-          hasArrest: shouldArrest, arrestX, arrestY,
+          hasArrest: false, arrestX: 0, arrestY: 0,
           crossingX: tx, crossingY: ty,
-          migrationT: 0, migrationDelay: Math.random() * 2000,
-          migrationDuration: 1500 + Math.random() * 1000,
+          migrationT: 0, migrationDelay: 0,
+          migrationDuration: 0,
           trailDrawn: false,
           spawnTime: performance.now(),
         });
@@ -226,33 +194,7 @@ export default function USMap({ data, currentMonth, width, height, phase, active
     }
 
     return newParticles;
-  }, [data, pickDestination, width, isInsideUS, aorNames, projectedAORs, projection]);
-
-  // Phase transitions
-  useEffect(() => {
-    if (phase === prevPhaseRef.current) return;
-    if (phase === "transition" && prevPhaseRef.current === "encounters") {
-      transitionStartRef.current = performance.now();
-      const trailCtx = trailCanvasRef.current?.getContext("2d");
-      if (trailCtx) trailCtx.clearRect(0, 0, width, height);
-      for (const p of particlesRef.current) {
-        if (p.hasArrest) { p.phase = "migrating-to-arrest"; p.migrationT = 0; p.trailDrawn = false; }
-        else p.phase = "faded";
-      }
-    }
-    if (phase === "encounters" && prevPhaseRef.current !== "encounters") {
-      for (const p of particlesRef.current) {
-        if (p.phase === "arrested" || p.phase === "migrating-to-arrest") {
-          p.x = p.crossingX; p.y = p.crossingY;
-          p.targetX = p.crossingX; p.targetY = p.crossingY;
-        }
-        p.phase = "settled"; p.settled = true; p.opacity = DOT_STYLES[p.layer].opacity;
-      }
-      const trailCtx = trailCanvasRef.current?.getContext("2d");
-      if (trailCtx) trailCtx.clearRect(0, 0, width, height);
-    }
-    prevPhaseRef.current = phase;
-  }, [phase, width, height]);
+  }, [data, pickDestination, width, isInsideUS, projection]);
 
   useEffect(() => {
     if (currentMonth === prevMonthRef.current) return;
@@ -280,34 +222,22 @@ export default function USMap({ data, currentMonth, width, height, phase, active
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const trailCanvas = trailCanvasRef.current;
-    const trailCtx = trailCanvas?.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = width * dpr; canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (trailCanvas && trailCtx) {
-      trailCanvas.width = width * dpr; trailCanvas.height = height * dpr;
-      trailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
 
     let animId: number;
     const batchMap = new Map<string, { x: number; y: number }[]>();
 
     const animate = () => {
       const now = performance.now();
-      const transitionElapsed = now - transitionStartRef.current;
 
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.globalAlpha = 0.15;
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, width, height);
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 1;
+      ctx.clearRect(0, 0, width, height);
 
       batchMap.clear();
       const particles = particlesRef.current;
-      const activeLayersNow = activeLayers;
+      const activeLayersNow = activeLayersRef.current;
 
       const addBatch = (fill: string, alpha: number, x: number, y: number, radius: number) => {
         const key = `${fill}|${alpha.toFixed(2)}|${radius}`;
@@ -316,36 +246,22 @@ export default function USMap({ data, currentMonth, width, height, phase, active
         arr.push({ x, y });
       };
 
+      const currentPreset = presetRef.current;
+      const isFiltered = currentPreset !== "all";
+      const isArrests = currentPreset === "arrests";
+      const ringBatch: { x: number; y: number; color: string }[] = [];
+
       for (const p of particles) {
         const style = DOT_STYLES[p.layer];
         const isActive = activeLayersNow.has(p.layer);
-        const baseOpacity = isActive ? style.opacity : 0.04;
 
-        // Turned-away: fade out
         if (p.layer === "border-turnedaway") {
+          if (!isActive) continue;
           const age = now - p.spawnTime;
           const fadeT = Math.max(0, 1 - age / 1000);
           if (fadeT <= 0) continue;
-          p.opacity = style.opacity * fadeT * (isActive ? 1 : 0.05);
+          p.opacity = style.opacity * fadeT;
           addBatch(style.fill, p.opacity, p.x, p.y, style.radius);
-          continue;
-        }
-
-        // Uncounted: fade in diffusely
-        if (p.layer === "uncounted") {
-          p.opacity += (baseOpacity - p.opacity) * 0.05;
-          if (style.dashed) {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, style.radius, 0, Math.PI * 2);
-            ctx.setLineDash([2, 2]);
-            ctx.strokeStyle = style.fill;
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = p.opacity;
-            ctx.stroke();
-            ctx.setLineDash([]);
-          } else {
-            addBatch(style.fill, p.opacity, p.x, p.y, style.radius);
-          }
           continue;
         }
 
@@ -355,68 +271,40 @@ export default function USMap({ data, currentMonth, width, height, phase, active
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < 1.5) {
             p.x = p.targetX; p.y = p.targetY;
-            p.settled = true; p.opacity = baseOpacity; p.phase = "settled";
+            p.settled = true; p.phase = "settled";
+            p.opacity = isActive ? style.opacity : 0.06;
           } else {
             const speed = Math.min(0.12, 8 / dist);
             p.x += dx * speed; p.y += dy * speed;
-            p.opacity = Math.min(baseOpacity, p.opacity + 0.06);
+            p.opacity = Math.min(isActive ? style.opacity : 0.06, p.opacity + 0.06);
           }
           addBatch(style.fill, p.opacity, p.x, p.y, p.settled ? style.radius : style.radius + 0.7);
           continue;
         }
 
-        if (p.phase === "settled") {
-          p.opacity += (baseOpacity - p.opacity) * 0.08;
+        if (p.phase === "settled" || p.phase === "faded") {
+          const targetOpacity = isActive ? style.opacity : (isFiltered ? 0.06 : style.opacity);
+          p.opacity += (targetOpacity - p.opacity) * 0.08;
+          if (p.opacity < 0.02) continue;
+
+          const r = isActive && isArrests ? style.radius + 1 : style.radius;
+          addBatch(style.fill, p.opacity, p.x, p.y, r);
+
+          if (isActive && isArrests) {
+            ringBatch.push({ x: p.x, y: p.y, color: style.fill });
+          }
+          continue;
+        }
+
+        if (p.layer === "uncounted") {
+          const targetOpacity = isActive ? style.opacity : 0.04;
+          p.opacity += (targetOpacity - p.opacity) * 0.05;
+          if (p.opacity < 0.02) continue;
           addBatch(style.fill, p.opacity, p.x, p.y, style.radius);
-          continue;
-        }
-
-        if (p.phase === "faded") {
-          p.opacity += (0.04 - p.opacity) * 0.05;
-          addBatch(style.fill, p.opacity, p.x, p.y, 1.8);
-          continue;
-        }
-
-        if (p.phase === "migrating-to-arrest") {
-          const elapsed = transitionElapsed - p.migrationDelay;
-          if (elapsed < 0) {
-            addBatch(style.fill, 0.85, p.x, p.y, style.radius);
-            continue;
-          }
-          p.migrationT = Math.min(1, elapsed / p.migrationDuration);
-          const eased = 1 - Math.pow(1 - p.migrationT, 3);
-          const mx = (p.crossingX + p.arrestX) / 2;
-          const my = Math.min(p.crossingY, p.arrestY) - 80;
-          const [bx, by] = quadBezier(p.crossingX, p.crossingY, mx, my, p.arrestX, p.arrestY, eased);
-          p.x = bx; p.y = by;
-
-          if (!p.trailDrawn && trailCtx && p.migrationT > 0.1) {
-            trailCtx.beginPath();
-            trailCtx.moveTo(p.crossingX, p.crossingY);
-            trailCtx.quadraticCurveTo(mx, my, p.arrestX, p.arrestY);
-            trailCtx.strokeStyle = style.fill;
-            trailCtx.globalAlpha = 0.08;
-            trailCtx.lineWidth = 1;
-            trailCtx.stroke();
-            p.trailDrawn = true;
-          }
-          if (p.migrationT >= 1) { p.phase = "arrested"; p.x = p.arrestX; p.y = p.arrestY; }
-          addBatch(style.fill, 0.9, p.x, p.y, 3.0);
-          continue;
-        }
-
-        if (p.phase === "arrested") {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-          ctx.strokeStyle = CRIMINAL_HISTORY_HEX["immigration-only"];
-          ctx.lineWidth = 1.5;
-          ctx.globalAlpha = 0.9;
-          ctx.stroke();
           continue;
         }
       }
 
-      // Flush batched fills
       for (const [key, dots] of batchMap) {
         const [color, alphaStr, radiusStr] = key.split("|");
         ctx.fillStyle = color;
@@ -430,12 +318,23 @@ export default function USMap({ data, currentMonth, width, height, phase, active
         ctx.fill();
       }
 
+      if (ringBatch.length > 0) {
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.5;
+        for (const { x, y, color } of ringBatch) {
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.strokeStyle = color;
+          ctx.stroke();
+        }
+      }
+
       ctx.globalAlpha = 1;
       animId = requestAnimationFrame(animate);
     };
     animId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animId);
-  }, [width, height, activeLayers]);
+  }, [width, height]);
 
   const hoverThrottleRef = useRef(0);
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -470,7 +369,6 @@ export default function USMap({ data, currentMonth, width, height, phase, active
         region: closest.region, sector: closest.sector,
         month: closest.birthMonth, demographic: closest.demographic,
         layer: closest.layer,
-        isArrest: closest.phase === "arrested",
       });
     } else {
       onHover(null);
@@ -489,8 +387,6 @@ export default function USMap({ data, currentMonth, width, height, phase, active
             fill="var(--color-map-neutral)" stroke="var(--color-map-stroke)" strokeWidth={0.5} />
         ))}
       </svg>
-      <canvas ref={trailCanvasRef} className="absolute inset-0 pointer-events-none"
-        style={{ width, height }} aria-hidden="true" />
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none"
         style={{ width, height }} aria-hidden="true" />
     </div>

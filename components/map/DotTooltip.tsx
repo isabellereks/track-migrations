@@ -90,7 +90,7 @@ export default function DotTooltip({
           Region: {REGION_LABEL[region]}
         </div>
         <div className="text-[10px] text-muted mt-0.5">
-          Each dot ≈ 100 people.
+          Each dot ≈ 300 people.
         </div>
       </div>
     </div>

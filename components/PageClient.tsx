@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import Hero from "@/components/hero/Hero";
 import { useScrollProgress } from "@/lib/use-scroll-progress";
@@ -25,9 +26,6 @@ const WhatTheyBuilt = dynamic(
 const ByTheNumbers = dynamic(
   () => import("@/components/sections/ByTheNumbers")
 );
-const AboutData = dynamic(
-  () => import("@/components/sections/AboutData")
-);
 
 export default function PageClient() {
   const progress = useScrollProgress();
@@ -44,47 +42,32 @@ export default function PageClient() {
       <WhatHappenedNext />
       <WhatTheyBuilt />
       <ByTheNumbers />
-      <AboutData />
 
-      <footer className="relative z-10 bg-bg border-t border-black/[.06]">
-        <div className="max-w-5xl mx-auto px-8 py-16">
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-8">
-            <div>
-              <div className="text-sm font-semibold text-ink mb-2">
-                Track Migration
-              </div>
-              <p className="text-xs text-muted leading-relaxed max-w-sm">
-                An interactive visualization of immigration to the United States,
-                built to make the data accessible and the people behind it visible.
-              </p>
-            </div>
-            <div className="flex gap-12">
-              <div className="space-y-2">
-                <div className="text-[10px] font-medium text-muted uppercase tracking-widest">
-                  Explore
-                </div>
-                <a href="#origins" className="block text-xs text-muted hover:text-ink transition-colors">Origins</a>
-                <a href="#reasons" className="block text-xs text-muted hover:text-ink transition-colors">Reasons</a>
-                <a href="#enforcement" className="block text-xs text-muted hover:text-ink transition-colors">Enforcement</a>
-                <a href="#economic" className="block text-xs text-muted hover:text-ink transition-colors">Economic impact</a>
-                <a href="#about" className="block text-xs text-muted hover:text-ink transition-colors">Methodology</a>
-              </div>
-              <div className="space-y-2">
-                <div className="text-[10px] font-medium text-muted uppercase tracking-widest">
-                  Related
-                </div>
-                <a href="https://trackpolicy.org" target="_blank" rel="noopener noreferrer" className="block text-xs text-muted hover:text-ink transition-colors">Track Policy</a>
-              </div>
-            </div>
+      <footer className="relative z-10 bg-white border-t border-black/[.06]">
+        <div className="max-w-5xl mx-auto px-8 py-10 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
+          <span>Track Migrations</span>
+          <div className="flex gap-6">
+            <Link href="/about" className="hover:text-ink transition-colors">
+              About
+            </Link>
+            <Link href="/methodology" className="hover:text-ink transition-colors">
+              Methodology
+            </Link>
+            <Link href="/contact" className="hover:text-ink transition-colors">
+              Contact
+            </Link>
           </div>
-          <div className="mt-10 pt-6 border-t border-black/[.06] flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span className="text-[11px] text-muted">
-              Data sources: CBP, Census ACS, USCIS, WRAPS, Deportation Data Project
-            </span>
-            <span className="text-[11px] text-muted">
-              Sample data for development
-            </span>
-          </div>
+          <span>
+            Built by{" "}
+            <a
+              href="https://x.com/isareksopuro"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-muted/40 decoration-[0.5px] underline-offset-4 hover:decoration-ink hover:text-ink transition-colors"
+            >
+              @isareksopuro
+            </a>
+          </span>
         </div>
       </footer>
     </>

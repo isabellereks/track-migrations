@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import TimeScrubber from "./TimeScrubber";
 import FilterBar from "./FilterBar";
 import MapSidebar from "./MapSidebar";
+import MapLegend from "./MapLegend";
 import DotTooltip from "./DotTooltip";
 import {
   getSampleData,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/sample-data";
 import { FILTER_LAYERS } from "@/lib/types";
 import type { FilterPreset } from "@/lib/types";
-import type { HoveredDot, MapPhase } from "./USMap";
+import type { HoveredDot } from "./USMap";
 
 const USMap = dynamic(() => import("./USMap"), { ssr: false });
 
@@ -25,9 +26,8 @@ interface Props {
 export default function DataMap({ revealProgress }: Props) {
   const data = useMemo(() => getSampleData(), []);
   const months = useMemo(() => getMonths(), []);
-  const [monthIndex, setMonthIndex] = useState(0);
+  const [monthIndex, setMonthIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
-  const [phase, setPhase] = useState<MapPhase>("encounters");
   const [activePreset, setActivePreset] = useState<FilterPreset>("all");
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 900, height: 560 });
@@ -47,7 +47,8 @@ export default function DataMap({ revealProgress }: Props) {
     return () => ro.disconnect();
   }, []);
 
-  const currentMonth = months[monthIndex] ?? "2020-01";
+  const started = monthIndex >= 0;
+  const currentMonth = months[Math.max(0, monthIndex)] ?? "2020-01";
 
   const filteredData = useMemo(() => {
     const layers = new Set(FILTER_LAYERS[activePreset]);
@@ -64,11 +65,13 @@ export default function DataMap({ revealProgress }: Props) {
   );
 
   const togglePlay = useCallback(() => {
-    setPlaying((p) => !p);
-  }, []);
+    setPlaying((p) => {
+      if (!p && monthIndex < 0) setMonthIndex(0);
+      return !p;
+    });
+  }, [monthIndex]);
 
   const replay = useCallback(() => {
-    setPhase("encounters");
     setMonthIndex(0);
     setPlaying(true);
   }, []);
@@ -126,13 +129,6 @@ export default function DataMap({ revealProgress }: Props) {
           active={activePreset}
           onChange={(preset) => {
             setActivePreset(preset);
-            if (preset === "arrests") {
-              setPlaying(false);
-              setPhase("transition");
-              setTimeout(() => setPhase("arrests"), 200);
-            } else {
-              setPhase("encounters");
-            }
           }}
         />
       </div>
@@ -144,11 +140,10 @@ export default function DataMap({ revealProgress }: Props) {
       >
         {dimensions.width > 0 && (
           <USMap
-            data={data}
-            currentMonth={currentMonth}
+            data={started ? data : []}
+            currentMonth={started ? currentMonth : ""}
             width={dimensions.width}
             height={dimensions.height}
-            phase={phase}
             activePreset={activePreset}
             onHover={setHoveredDot}
           />
@@ -158,7 +153,6 @@ export default function DataMap({ revealProgress }: Props) {
       {/* Sidebar — right edge, vertically centered */}
       <div className="absolute right-5 top-1/2 -translate-y-1/2 hidden lg:block z-20">
         <MapSidebar
-          phase={phase}
           activePreset={activePreset}
           data={filteredData}
           currentMonth={currentMonth}
@@ -190,6 +184,7 @@ export default function DataMap({ revealProgress }: Props) {
         playing={playing}
         onTogglePlay={togglePlay}
         onReplay={replay}
+        legend={<MapLegend activePreset={activePreset} />}
       />
     </div>
   );
