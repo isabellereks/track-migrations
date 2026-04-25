@@ -53,12 +53,18 @@ export default function FilterBar({ mode, active, onChange }: Props) {
       ref={containerRef}
       className="relative bg-white/90 backdrop-blur-2xl rounded-full border border-black/[.06] p-1 flex shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
     >
+      {/* Position via translate3d (compositor-only) instead of `left` so the
+          slide between presets doesn't require per-frame layout. Width still
+          animates — scaleX would distort the rounded-full caps — but it's a
+          single absolute element so the layout cost stays small. */}
       <div
-        className="absolute top-1 h-[calc(100%-8px)] rounded-full bg-ink"
+        className="absolute top-1 left-0 h-[calc(100%-8px)] rounded-full bg-ink"
         style={{
-          left: pillStyle.left,
           width: pillStyle.width,
-          transition: "left 320ms cubic-bezier(0.32, 0.72, 0, 1), width 320ms cubic-bezier(0.32, 0.72, 0, 1)",
+          transform: `translate3d(${pillStyle.left}px, 0, 0)`,
+          transition: pillStyle.width === 0
+            ? "none"
+            : "transform 320ms cubic-bezier(0.32, 0.72, 0, 1), width 320ms cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       />
       {presets.map(({ key, label }) => (

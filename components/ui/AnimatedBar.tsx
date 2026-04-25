@@ -41,15 +41,25 @@ export default function AnimatedBar({
     return () => io.disconnect();
   }, []);
 
+  // Animate `transform: scaleX()` instead of `width`. Width transitions force
+  // a full layout/paint per frame for every animating bar (and any siblings
+  // that depend on its size). scaleX is a compositor-only transform — no
+  // layout, no main-thread paint — so bar charts with N rows go from N
+  // layout-thrashing animations to N GPU-cheap ones. The element keeps its
+  // final width in the layout tree so flex siblings size correctly; only the
+  // rendered geometry is scaled.
   return (
     <div
       ref={ref}
       className={className}
       style={{
-        width: revealed ? width : "0%",
+        width,
         height,
         backgroundColor: color,
-        transition: `width 800ms cubic-bezier(0.32, 0.72, 0, 1) ${delay}ms`,
+        transform: revealed ? "scaleX(1)" : "scaleX(0)",
+        transformOrigin: "0 50%",
+        transition: `transform 800ms cubic-bezier(0.32, 0.72, 0, 1) ${delay}ms`,
+        willChange: revealed ? undefined : "transform",
       }}
     />
   );

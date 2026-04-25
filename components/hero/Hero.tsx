@@ -85,35 +85,47 @@ export default function Hero({ progress }: Props) {
       <div
         className="absolute inset-x-0 bottom-[5.5vh] z-20 flex flex-col items-center gap-2.5 pointer-events-none"
         style={{ opacity: hintOpacity }}
-        aria-hidden
       >
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-ink tracking-tight">
-            Scroll to reveal the map
-          </span>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            className="text-ink"
-            style={{ animation: "scroll-hint 1.8s ease-in-out infinite" }}
-          >
-            <path
-              d="M3 4.5l3 3 3-3"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <button
+          type="button"
+          onClick={() => {
+            window.scrollTo({
+              top: window.innerHeight * 2,
+              behavior: "smooth",
+            });
+          }}
+          aria-label="Reveal the map"
+          className="pointer-events-auto flex flex-col items-center gap-2.5 cursor-pointer group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 px-3 py-1"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-ink tracking-tight group-hover:opacity-80 transition-opacity">
+              Scroll to reveal the map
+            </span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              className="text-ink"
+              style={{ animation: "scroll-hint 1.8s ease-in-out infinite" }}
+              aria-hidden
+            >
+              <path
+                d="M3 4.5l3 3 3-3"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <div className="relative w-40 h-[2px] rounded-full bg-ink/10 overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-ink"
+              style={{ width: `${hintProgress}%` }}
             />
-          </svg>
-        </div>
-        <div className="relative w-40 h-[2px] rounded-full bg-ink/10 overflow-hidden">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-ink"
-            style={{ width: `${hintProgress}%` }}
-          />
-        </div>
+          </div>
+        </button>
       </div>
     </section>
   );
