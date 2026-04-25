@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import type { EncounterRecord, FilterMode, StatusPreset } from "@/lib/types";
+import { useState } from "react";
+import NumberFlow from "@number-flow/react";
+import type { FilterMode, StatusPreset } from "@/lib/types";
 import { DOT_STYLES } from "@/lib/types";
 import { REGION_HEX, type OriginRegion } from "@/lib/colors";
 
 import type { FilterPreset } from "@/lib/types";
+
+const COMPACT_FORMAT = {
+  notation: "compact",
+  maximumFractionDigits: 1,
+} as const;
 
 const PRESET_LABEL: Record<FilterPreset, string> = {
   all: "total encounters",
@@ -47,9 +53,9 @@ export type BorderView = "entered" | "stopped";
 interface Props {
   filterMode: FilterMode;
   activePreset: string;
-  data: EncounterRecord[];
   currentMonth: string;
   totalEncounters: number;
+  monthTotal: number;
   topCountries: Array<{ name: string; region: string; count: number }>;
   topVisas: Array<{ visaClass: string; label: string; count: number }>;
   borderView: BorderView;
@@ -100,21 +106,15 @@ function visaColor(visaClass: string): string {
 export default function MapSidebar({
   filterMode,
   activePreset,
-  data,
   currentMonth,
   totalEncounters,
+  monthTotal,
   topCountries,
   topVisas,
   borderView,
   onBorderViewChange,
 }: Props) {
   const [groupBy, setGroupBy] = useState<"country" | "visa">("country");
-
-  const monthTotal = useMemo(() => {
-    return data
-      .filter((d) => d.month === currentMonth)
-      .reduce((s, d) => s + d.count, 0);
-  }, [data, currentMonth]);
 
   const showToggle = SHOW_VISA_TOGGLE.has(activePreset);
   const isBorder = activePreset === "border" && filterMode === "pathway";
@@ -152,9 +152,12 @@ export default function MapSidebar({
     <div className="w-56 space-y-3">
       {/* Counter pill */}
       <div className="bg-white rounded-2xl border border-black/[.06] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className="text-2xl font-semibold text-ink tracking-tight leading-none tabular-nums">
-          {formatNumber(totalEncounters)}
-        </div>
+        <NumberFlow
+          value={totalEncounters}
+          format={COMPACT_FORMAT}
+          locales="en-US"
+          className="text-2xl font-semibold text-ink tracking-tight leading-none tabular-nums"
+        />
         <div className="text-[11px] text-muted mt-1.5">
           {label} through {formatMonth(currentMonth)}
         </div>
@@ -164,9 +167,12 @@ export default function MapSidebar({
           </div>
         )}
         <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-ink tabular-nums">
-            {formatNumber(monthTotal)}
-          </span>
+          <NumberFlow
+            value={monthTotal}
+            format={COMPACT_FORMAT}
+            locales="en-US"
+            className="text-sm font-semibold text-ink tabular-nums"
+          />
           <span className="text-[11px] text-muted">this month</span>
         </div>
       </div>

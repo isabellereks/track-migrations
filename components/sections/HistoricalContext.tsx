@@ -196,12 +196,25 @@ function HistoricalChart() {
             <stop offset="100%" stopColor="rgba(112,144,200,0.02)" />
           </linearGradient>
           <clipPath id="reveal-clip">
+            {/* Animate transform: scaleX rather than the rect's width. SVG
+                width transitions trigger SVG layout + re-rasterize all clipped
+                content per frame — switching to a transform animation keeps
+                the work on the compositor. */}
             <rect
               x={PAD.left}
               y={0}
-              width={revealed || reducedMotion ? PLOT_W : 0}
+              width={PLOT_W}
               height={CHART_H}
-              style={reducedMotion ? undefined : { transition: "width 1.5s cubic-bezier(0.32, 0.72, 0, 1)" }}
+              style={
+                reducedMotion
+                  ? undefined
+                  : {
+                      transform: revealed ? "scaleX(1)" : "scaleX(0)",
+                      transformOrigin: "0 0",
+                      transformBox: "fill-box",
+                      transition: "transform 1.5s cubic-bezier(0.32, 0.72, 0, 1)",
+                    }
+              }
             />
           </clipPath>
         </defs>
